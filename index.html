@@ -1,0 +1,4205 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I-Run</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --bg4: #222222;
+    --accent: #ff5722;
+    --accent2: #ff8a65;
+    --accent3: #ffccbc;
+    --text: #f5f5f5;
+    --text2: #aaaaaa;
+    --text3: #666666;
+    --border: #2a2a2a;
+    --border2: #333333;
+    --green: #4caf50;
+    --red: #f44336;
+    --blue: #2196f3;
+    --purple: #9c27b0;
+    --teal: #009688;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* NAVBAR */
+  .nav {
+    position: fixed; top:0; left:0; right:0; z-index:100;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; gap: 32px;
+    height: 56px;
+  }
+  .nav-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: 28px;
+    color: var(--accent);
+    letter-spacing: -1px;
+    cursor: pointer;
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-links { display:flex; gap:4px; flex:1; }
+  .nav-link {
+    padding: 6px 14px; border-radius: 6px;
+    font-size: 14px; font-weight: 500;
+    color: var(--text2); cursor: pointer;
+    transition: all 0.15s;
+    border: none; background: none;
+  }
+  .nav-link:hover { color: var(--text); background: var(--bg3); }
+  .nav-link.active { color: var(--accent); background: rgba(255,87,34,0.1); }
+  .nav-right { display:flex; align-items:center; gap:12px; }
+  .btn-primary {
+    background: var(--accent); color: white;
+    border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Barlow', sans-serif;
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--bg3); color: var(--text2);
+    border: 1px solid var(--border2); border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Barlow', sans-serif;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--border2); background: var(--bg4); }
+
+  /* MAIN */
+  .main { padding-top: 56px; min-height: 100vh; }
+
+  /* PAGES */
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a00 50%, #0a0a0a 100%);
+    padding: 80px 24px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top:-50%; left:-50%; right:-50%; bottom:-50%;
+    background: radial-gradient(ellipse at 60% 40%, rgba(255,87,34,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-label {
+    display: inline-block;
+    background: rgba(255,87,34,0.15); color: var(--accent);
+    border: 1px solid rgba(255,87,34,0.3);
+    border-radius: 20px; padding: 4px 14px;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 900; line-height: 0.9;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+  }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p {
+    color: var(--text2); font-size: 18px; font-weight: 300;
+    max-width: 560px; margin: 0 auto 36px;
+  }
+  .hero-cta { display:flex; gap:12px; justify-content:center; }
+
+  /* STATS BAR */
+  .stats-bar {
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    display: flex; gap: 0;
+  }
+  .stat-item {
+    flex:1; text-align:center;
+    padding: 0 20px;
+    border-right: 1px solid var(--border);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px; font-weight: 800; color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+  /* PROFILO */
+  .profile-wrap { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .profile-header {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex; gap: 28px; align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .avatar {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items:center; justify-content:center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 36px; font-weight: 900; color: white;
+    flex-shrink: 0; cursor: pointer;
+    position: relative;
+  }
+  .avatar-edit {
+    position:absolute; bottom:0; right:0;
+    width:28px; height:28px; border-radius:50%;
+    background: var(--bg4); border: 2px solid var(--bg3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+  }
+  .profile-info { flex:1; }
+  .profile-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px; font-weight: 800;
+    line-height: 1;
+  }
+  .profile-meta { color: var(--text2); font-size: 14px; margin: 6px 0 14px; }
+  .profile-tags { display:flex; gap:8px; flex-wrap:wrap; }
+  .sport-tag {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1px solid;
+  }
+  .tag-run { background: rgba(255,87,34,0.1); color: var(--accent); border-color: rgba(255,87,34,0.3); }
+  .tag-tri { background: rgba(33,150,243,0.1); color: #64b5f6; border-color: rgba(33,150,243,0.3); }
+  .tag-trail { background: rgba(76,175,80,0.1); color: #81c784; border-color: rgba(76,175,80,0.3); }
+
+  .profile-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .ps-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; text-align:center;
+  }
+  .ps-num { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:800; color:var(--accent); }
+  .ps-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+  /* PB SECTION */
+  .pb-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+  .pb-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .pb-dist { font-size:13px; color:var(--text2); }
+  .pb-time { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:var(--text); }
+
+  /* SEZIONE TITOLO */
+  .section-title {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:22px; font-weight:800;
+    letter-spacing:-0.5px;
+    margin-bottom: 14px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+
+  /* GARE LIST */
+  #gare-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.gare-list { display:flex; flex-direction:column; gap:10px; }
+  .gara-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px;
+    display:flex; align-items:center; gap:16px;
+    transition: border-color 0.15s;
+    cursor:pointer;
+  }
+  .gara-card:hover { border-color: var(--border2); }
+  .gara-type {
+    width:42px; height:42px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; flex-shrink:0;
+  }
+  .gara-info { flex:1; }
+  .gara-nome { font-weight:600; font-size:15px; }
+  .gara-meta { font-size:13px; color:var(--text2); margin-top:2px; }
+  .gara-right { text-align:right; }
+  .gara-tempo {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:22px; font-weight:700; color:var(--text);
+  }
+  .gara-voto { display:flex; gap:2px; margin-top:4px; justify-content:flex-end; }
+  .star { font-size:12px; }
+  .finisher-badge {
+    display:inline-block; padding:2px 8px; border-radius:4px;
+    font-size:11px; font-weight:700; text-transform:uppercase;
+  }
+  .badge-fin { background:rgba(76,175,80,0.15); color:#81c784; }
+  .badge-dnf { background:rgba(244,67,54,0.15); color:#ef9a9a; }
+
+  /* FORM */
+  .form-overlay {
+    position:fixed; inset:0; z-index:200;
+    background: rgba(0,0,0,0.85);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: 20px; overflow-y:auto;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.2s;
+  }
+  .form-overlay.open { opacity:1; pointer-events:all; }
+  .form-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%; max-width: 680px;
+    margin: auto;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+  .form-overlay.open .form-box { transform: translateY(0); }
+  .form-title {
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:28px; font-weight:800;
+    margin-bottom:24px;
+  }
+  .form-title span { color:var(--accent); }
+  .form-grid { display:grid; gap:16px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-row.triple { grid-template-columns:1fr 1fr 1fr; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-label { font-size:12px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+  .form-input, .form-select, .form-textarea {
+    background: var(--bg4); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 14px;
+    color: var(--text); font-size:15px; font-family:'Barlow',sans-serif;
+    outline:none; transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-select { cursor:pointer; }
+  .form-select option { background: var(--bg4); }
+  .form-textarea { resize:vertical; min-height:80px; }
+
+  /* RATING STARS */
+  .star-rating { display:flex; gap:6px; }
+  .star-btn {
+    font-size:22px; cursor:pointer; transition:transform 0.1s;
+    opacity:0.3; background:none; border:none; padding:0;
+  }
+  .star-btn.active { opacity:1; }
+  .star-btn:hover { transform:scale(1.2); opacity:0.8; }
+
+  /* TIPO SPORT SELECTOR */
+  .sport-selector { display:flex; gap:8px; flex-wrap:wrap; }
+  .sport-btn {
+    padding:8px 16px; border-radius:8px; cursor:pointer;
+    border: 1px solid var(--border2); background: var(--bg4);
+    color: var(--text2); font-size:13px; font-weight:500;
+    transition:all 0.15s; display:flex; align-items:center; gap:6px;
+  }
+  .sport-btn.sel { border-color:var(--accent); background:rgba(255,87,34,0.1); color:var(--accent); }
+
+  .form-divider {
+    border:none; border-top:1px solid var(--border);
+    margin: 8px 0;
+  }
+  .form-section-label {
+    font-size:11px; font-weight:700; color:var(--accent);
+    text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;
+  }
+  .form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; }
+
+  /* PROFILO EDIT */
+  .profile-form-wrap { max-width:700px; margin:0 auto; padding:32px 24px; }
+  .profile-form-box {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:16px; padding:32px;
+  }
+
+  /* TABS */
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .tab {
+    padding:10px 18px; border-radius:8px 8px 0 0;
+    font-size:14px; font-weight:500; cursor:pointer;
+    color:var(--text2); border:none; background:none;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+    transition:all 0.15s;
+  }
+  .tab:hover { color:var(--text); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align:center; padding:60px 20px;
+    color:var(--text3);
+  }
+  .empty-icon { font-size:48px; margin-bottom:16px; opacity:0.5; }
+  .empty-title { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--text2); margin-bottom:8px; }
+  .empty-sub { font-size:14px; margin-bottom:24px; }
+
+  /* MAPPA PLACEHOLDER */
+  .map-placeholder {
+    background: var(--bg3); border:1px solid var(--border);
+    border-radius:16px; padding:40px;
+    text-align:center; margin-bottom:24px;
+    position:relative; overflow:hidden; min-height:300px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .map-italy {
+    font-size:140px; line-height:1;
+    opacity:0.15; position:absolute;
+    top:50%; left:50%; transform:translate(-50%,-50%);
+  }
+  .map-overlay { position:relative; z-index:1; }
+  .region-dot {
+    position:absolute; width:12px; height:12px; border-radius:50%;
+    background:var(--accent); border:2px solid var(--bg);
+    transform:translate(-50%,-50%);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100%{box-shadow:0 0 0 0 rgba(255,87,34,0.4)}
+    50%{box-shadow:0 0 0 8px rgba(255,87,34,0)}
+  }
+
+  /* DETAIL MODAL */
+  .detail-overlay {
+    position: fixed; inset:0; z-index:200;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.2s;
+    padding: 20px;
+  }
+  .detail-overlay.open { opacity:1; pointer-events:all; }
+  .detail-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    width: 100%; max-width: 680px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .detail-header {
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top:0; z-index:2;
+    background: var(--bg2);
+  }
+  .detail-body { padding: 20px 28px 28px; }
+  .detail-section {
+    margin-bottom: 22px;
+  }
+  .detail-section-title {
+    font-size:11px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; color:var(--text3);
+    margin-bottom:10px;
+  }
+  .detail-close {
+    position:absolute; top:16px; right:20px;
+    background:var(--bg4); border:1px solid var(--border2);
+    border-radius:50%; width:32px; height:32px;
+    font-size:16px; cursor:pointer; color:var(--text2);
+    display:flex; align-items:center; justify-content:center;
+    transition: all 0.15s;
+  }
+  .detail-close:hover { background:var(--bg3); color:var(--text); }
+  .fraz-row {
+    display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+  }
+  .fraz-box {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:8px; padding:10px 8px; text-align:center;
+  }
+  .fraz-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+  .fraz-val { font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; color:var(--text); }
+  .rating-row {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+  }
+  .rating-box {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:8px; padding:10px 12px;
+  }
+  .rating-box-label { font-size:11px; color:var(--text3); margin-bottom:4px; }
+  .rating-box-val { font-size:18px; }
+  .hotel-card {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:12px; padding:16px;
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .hotel-icon { font-size:28px; flex-shrink:0; }
+  .hotel-info-detail { flex:1; }
+  .hotel-name { font-weight:700; font-size:15px; margin-bottom:4px; }
+  .hotel-tipo { font-size:12px; color:var(--text3); margin-bottom:10px; }
+
+  /* IMPORT PREVIEW MODAL */
+  .import-overlay {
+    position: fixed; inset:0; z-index:300;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.2s;
+    padding: 20px;
+  }
+  .import-overlay.open { opacity:1; pointer-events:all; }
+  .import-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    width: 100%; max-width: 900px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+  }
+  .import-header {
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    position:sticky; top:0; background:var(--bg2); z-index:2;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .import-body { padding: 20px 28px 28px; }
+  .preview-table {
+    width:100%; border-collapse:collapse; font-size:12px;
+    margin-top:12px;
+  }
+  .preview-table th {
+    text-align:left; padding:8px 10px;
+    background:var(--bg3); color:var(--text3);
+    font-weight:600; letter-spacing:0.3px;
+    border-bottom:2px solid var(--border2);
+    white-space:nowrap;
+  }
+  .preview-table td {
+    padding:8px 10px; border-bottom:1px solid var(--border);
+    color:var(--text2); vertical-align:top;
+  }
+  .preview-table tr:hover td { background:rgba(255,255,255,0.02); }
+  .preview-dup { opacity:0.4; }
+  .preview-badge-dup {
+    background:rgba(255,193,7,0.15); color:#ffd54f;
+    border-radius:4px; padding:1px 6px; font-size:10px; font-weight:600;
+  }
+  .preview-badge-new {
+    background:rgba(76,175,80,0.15); color:#81c784;
+    border-radius:4px; padding:1px 6px; font-size:10px; font-weight:600;
+  }
+  .drop-zone {
+    border:2px dashed var(--border2); border-radius:12px;
+    padding:48px 24px; text-align:center;
+    cursor:pointer; transition:all 0.2s;
+    color:var(--text3);
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color:var(--accent); color:var(--text); background:rgba(255,87,34,0.04); }
+  .drop-zone-icon { font-size:48px; margin-bottom:12px; }
+  .drop-zone-title { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; margin-bottom:6px; color:var(--text); }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:24px; right:24px; z-index:300;
+    background:var(--bg3); border:1px solid var(--border2);
+    border-radius:10px; padding:14px 20px;
+    font-size:14px; font-weight:500;
+    transform:translateY(80px); opacity:0;
+    transition:all 0.3s; pointer-events:none;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast-success { border-left:3px solid var(--green); }
+
+  /* MAPPA SVG */
+  .reg-d3 {
+    transition: fill 0.2s, opacity 0.15s;
+  }
+  .reg {
+    fill: var(--bg4);
+    stroke: var(--border2);
+    stroke-width: 1;
+    transition: fill 0.2s, opacity 0.15s, filter 0.15s;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+/* tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  padding: 7px 18px;
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  border-radius: 24px;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Barlow', sans-serif;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tab-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,87,34,0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255,87,34,0.15);
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(255,87,34,0.4);
+  transform: translateY(-1px);
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav">
+  <div class="nav-logo" onclick="showPage('home')">I<span>-Run</span></div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home',this)">Home</button>
+    <button class="nav-link" onclick="showPage('profilo',this)">Il mio profilo</button>
+    <button class="nav-link" onclick="showPage('gare',this)">Le mie gare</button>
+    <button class="nav-link" onclick="showPage('mappa',this)">Mappa</button>
+    <button class="nav-link" onclick="showPage('programma',this)">In programma</button>
+    <button class="nav-link" onclick="showPage('stats',this)">Statistiche</button>
+  </div>
+  <div class="nav-right">
+    <span id="sync-badge" style="font-size:12px;color:var(--text3);min-width:100px;text-align:right;"></span>
+    <button class="btn-secondary" onclick="openImport()" style="font-size:13px;">📥 Import CSV</button>
+    <button class="btn-secondary" onclick="openForm()">+ Aggiungi gara</button>
+    <div id="nav-user-btn" style="cursor:pointer;" onclick="openLoginModal()">
+      <div class="avatar" style="width:36px;height:36px;font-size:14px;" id="nav-avatar">
+        <span id="nav-initials">?</span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- LOGIN / REGISTRAZIONE MODAL -->
+<div class="form-overlay" id="login-overlay" onclick="if(event.target===this&&getUtenteId())closeLoginModal()">
+  <div class="form-box" style="max-width:520px;">
+    <div class="form-title" id="login-title">Accedi a <span>I-Run</span></div>
+
+    <!-- TAB LOGIN / REGISTRAZIONE -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);">
+      <button id="tab-login" onclick="switchAuthTab('login')"
+        style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;">
+        Accedi
+      </button>
+      <button id="tab-reg" onclick="switchAuthTab('reg')"
+        style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;">
+        Registrati
+      </button>
+    </div>
+
+    <!-- FORM LOGIN -->
+    <div id="auth-login-form">
+      <div class="form-group">
+        <label class="form-label">Nome utente o Email</label>
+        <input class="form-input" id="login-uid" placeholder="es. alessandro o ale@email.com" />
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="login-pwd" type="password" placeholder="••••••••" />
+      </div>
+      <div id="login-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
+      <div class="form-actions" style="margin-top:20px;">
+        <button class="btn-secondary" id="login-cancel-btn" onclick="closeLoginModal()" style="display:none;">Annulla</button>
+        <button class="btn-primary" onclick="confermaLogin()" style="flex:1;">Accedi</button>
+      </div>
+    </div>
+
+    <!-- FORM REGISTRAZIONE -->
+    <div id="auth-reg-form" style="display:none;">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reg-nome" placeholder="Mario" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cognome <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reg-cognome" placeholder="Rossi" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reg-email" type="email" placeholder="mario@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data di nascita</label>
+          <input class="form-input" id="reg-nascita" type="date" />
+        </div>
+      </div>
+      <div class="form-row triple">
+        <div class="form-group">
+          <label class="form-label">Sesso</label>
+          <select class="form-select" id="reg-sesso">
+            <option value="">—</option>
+            <option value="M">Uomo</option>
+            <option value="F">Donna</option>
+            <option value="A">Altro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Peso (kg)</label>
+          <input class="form-input" id="reg-peso" type="number" placeholder="70" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Altezza (cm)</label>
+          <input class="form-input" id="reg-altezza" type="number" placeholder="175" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sport preferito</label>
+        <select class="form-select" id="reg-sport">
+          <option value="">Seleziona...</option>
+          <!-- Popolato dinamicamente da popolaSelectConfig() -->
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reg-pwd" type="password" placeholder="min. 6 caratteri" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Conferma password <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reg-pwd2" type="password" placeholder="ripeti la password" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:4px;">
+        <label class="form-label">Profilo</label>
+        <div style="display:flex;gap:16px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+            <input type="radio" name="reg-profilo" value="pubblico" checked /> Pubblico
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+            <input type="radio" name="reg-profilo" value="privato" /> Privato
+          </label>
+        </div>
+      </div>
+      <div id="reg-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
+      <div class="form-actions" style="margin-top:20px;">
+        <button class="btn-secondary" onclick="switchAuthTab('login')">Torna al login</button>
+        <button class="btn-primary" onclick="confermaRegistrazione()" style="flex:1;">Crea account</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- HOME PAGE -->
+  <div id="page-home" class="page active">
+    <div class="hero">
+      <div class="hero-label">Il tuo diario sportivo</div>
+      <h1>Ogni gara<br><em>racconta</em><br>una storia</h1>
+      <p>Traccia le tue gare, scopri nuovi percorsi, condividi le tue imprese con la community di atleti.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="openForm()">Aggiungi gara</button>
+        <button class="btn-secondary" onclick="showPage('gare')">Vedi le tue gare</button>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num" id="home-n-gare">0</div>
+        <div class="stat-label">Gare completate</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="home-km">0</div>
+        <div class="stat-label">Km totali</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="home-regioni">0</div>
+        <div class="stat-label">Regioni coperte</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="home-sport">0</div>
+        <div class="stat-label">Sport diversi</div>
+      </div>
+    </div>
+
+    <div style="max-width:900px;margin:0 auto;padding:32px 24px;">
+      <div class="section-title">
+        Ultime gare aggiunte
+        <button class="btn-secondary" onclick="showPage('gare')" style="font-size:13px;padding:6px 14px;">Vedi tutte →</button>
+      </div>
+      <div id="home-gare-list" class="gare-list">
+        <div class="empty-state">
+          <div class="empty-icon">🏅</div>
+          <div class="empty-title">Nessuna gara ancora</div>
+          <div class="empty-sub">Aggiungi la tua prima gara per iniziare a costruire la tua storia sportiva.</div>
+          <button class="btn-primary" onclick="openForm()">Aggiungi gara</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILO -->
+  <div id="page-profilo" class="page">
+    <div class="profile-wrap">
+      <div class="profile-header" id="profile-header">
+        <div class="avatar" onclick="editProfile()">
+          <span id="avatar-initials">?</span>
+          <div class="avatar-edit">✏️</div>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name" id="profile-name">Il tuo profilo</div>
+          <div class="profile-meta" id="profile-meta"></div>
+          <div id="profile-sport" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <button class="btn-secondary" onclick="editProfile()" style="flex-shrink:0;">Modifica profilo</button>
+          <div id="profile-visibility" style="font-size:12px;color:var(--text3);"></div>
+          <div id="profile-email" style="font-size:12px;color:var(--text3);"></div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="ps-card"><div class="ps-num" id="ps-gare">0</div><div class="ps-label">Gare totali</div></div>
+        <div class="ps-card"><div class="ps-num" id="ps-km">0</div><div class="ps-label">Km percorsi</div></div>
+        <div class="ps-card"><div class="ps-num" id="ps-regioni">0</div><div class="ps-label">Regioni</div></div>
+        <div class="ps-card"><div class="ps-num" id="ps-finisher">100%</div><div class="ps-label">Finisher rate</div></div>
+      </div>
+
+      <div class="section-title">Personal Best automatici</div>
+      <div class="pb-grid" id="pb-grid-auto">
+        <!-- Popolato da renderProfiloPB() -->
+        <div style="color:var(--text3);font-size:13px;grid-column:1/-1;">Caricamento...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GARE -->
+  <div id="page-gare" class="page">
+    <div class="profile-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;">Le mie gare</h2>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-secondary" onclick="openImportModal()">&#x1F4E5; Import CSV</button>
+          <button class="btn-primary" onclick="openForm()">+ Aggiungi gara</button>
+        </div>
+      </div>
+
+      <div class="tabs" id="gare-tabs" style="flex-wrap:wrap;gap:6px;">
+        <!-- Tab generati dinamicamente da renderGare() -->
+      </div>
+
+      <div id="gare-list-main" class="gare-list">
+        <div class="empty-state">
+          <div class="empty-icon">🏅</div>
+          <div class="empty-title">Nessuna gara ancora</div>
+          <div class="empty-sub">Clicca su "Aggiungi gara" per censire la tua prima gara.</div>
+          <button class="btn-primary" onclick="openForm()">Aggiungi gara</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPPA -->
+  <div id="page-mappa" class="page">
+    <div class="profile-wrap">
+      <div class="section-title" style="margin-bottom:4px;">
+        Mappa delle mie gare
+        <span id="mappa-stats" style="font-size:13px;font-weight:400;color:var(--text2);"></span>
+      </div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:20px;">Le regioni colorate sono quelle in cui hai gareggiato. Passa sopra per vedere i dettagli.</p>
+
+      <div style="display:grid;grid-template-columns:3fr 2fr;gap:24px;align-items:start;">
+
+        <!-- SVG ITALIA -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;">
+          <div id="italy-map-container" style="width:100%;position:relative;">
+            <svg id="italy-svg" viewBox="0 0 500 600" style="width:100%;display:block;" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="reg-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+          <path class="reg-d3" id="reg-Valle d'Aosta" data-region="Valle d'Aosta" d="M26.4,81.2 L35.5,77.6 L47.6,80.7 L58.6,81.2 L67.3,82.2 L71.5,87.4 L69.6,92.5 L59.3,96.5 L47.2,95.5 L35.5,93.0 L29.4,89.9 Z"/>
+          <path class="reg-d3" id="reg-Piemonte" data-region="Piemonte" d="M20.3,168.9 L28.6,187.6 L53.3,185.7 L66.9,176.3 L73.0,159.4 L95.7,140.9 L105.2,132.4 L107.9,117.3 L102.2,101.6 L86.6,85.8 L71.5,82.2 L58.6,81.2 L47.6,80.7 L35.5,77.6 L26.4,81.2 L29.4,89.9 L35.5,93.0 L31.7,106.7 L28.6,128.9 Z"/>
+          <path class="reg-d3" id="reg-Liguria" data-region="Liguria" d="M53.3,185.7 L28.6,187.6 L20.3,168.9 L28.6,128.9 L73.0,159.4 L95.7,140.9 L113.2,169.8 L129.8,175.3 L141.6,178.8 L134.4,189.6 L110.9,189.6 L90.8,185.7 Z"/>
+          <path class="reg-d3" id="reg-Lombardia" data-region="Lombardia" d="M107.9,117.3 L102.2,101.6 L86.6,85.8 L109.8,82.2 L129.8,51.4 L148.0,43.1 L165.9,44.2 L192.4,42.6 L204.1,42.6 L204.9,78.7 L192.4,91.9 L178.0,96.0 L153.3,99.1 L140.1,106.2 L124.9,112.8 L113.5,120.3 L109.8,135.4 L106.0,142.9 L95.7,140.9 L73.0,159.4 L113.2,169.8 L124.9,122.9 Z"/>
+          <path class="reg-d3" id="reg-Trentino-Alto Adige" data-region="Trentino-Alto Adige" d="M165.9,44.2 L148.0,43.1 L129.8,51.4 L109.8,82.2 L128.7,72.0 L147.7,66.9 L166.6,72.0 L178.0,74.6 L193.1,64.3 L204.1,42.6 Z"/>
+          <path class="reg-d3" id="reg-Veneto" data-region="Veneto" d="M204.1,42.6 L192.4,42.6 L165.9,44.2 L178.0,74.6 L193.1,64.3 L204.9,78.7 L226.5,80.2 L243.9,79.7 L262.5,85.3 L263.3,97.0 L245.1,104.7 L234.5,109.2 L219.7,109.7 L199.2,101.6 L187.1,104.1 L192.4,91.9 L204.9,78.7 Z"/>
+          <path class="reg-d3" id="reg-Friuli-Venezia Giulia" data-region="Friuli-Venezia Giulia" d="M243.9,79.7 L226.5,80.2 L204.9,78.7 L204.1,42.6 L230.7,50.4 L249.6,44.7 L277.7,48.3 L288.7,97.5 L282.6,87.9 L265.9,85.8 L253.8,97.0 Z"/>
+          <path class="reg-d3" id="reg-Emilia-Romagna" data-region="Emilia-Romagna" d="M113.5,120.3 L124.9,112.8 L140.1,106.2 L153.3,99.1 L178.0,96.0 L192.4,91.9 L187.1,104.1 L199.2,101.6 L219.7,109.7 L234.5,109.2 L245.1,104.7 L251.9,162.9 L251.9,174.3 L245.5,171.8 L234.5,180.7 L225.7,180.2 L209.8,190.1 L195.0,188.1 L180.3,184.7 L166.6,186.7 L152.6,184.7 L141.6,178.8 L129.8,175.3 L113.2,169.8 L106.0,142.9 L109.8,135.4 L113.5,120.3 Z"/>
+          <path class="reg-d3" id="reg-Toscana" data-region="Toscana" d="M141.6,178.8 L152.6,184.7 L166.6,186.7 L180.3,184.7 L170.0,206.3 L167.0,221.9 L163.2,237.0 L171.9,240.9 L188.2,245.2 L202.2,242.3 L219.7,245.2 L227.6,247.7 L220.4,255.4 L207.9,261.6 L193.5,261.1 L181.8,253.4 L172.7,247.7 L162.4,245.7 L147.7,230.2 L146.9,214.6 L140.1,202.4 L141.6,178.8 L134.4,189.6 L110.9,189.6 L90.8,185.7 L103.7,179.2 L105.2,132.4 L113.2,169.8 L129.8,175.3 Z"/>
+          <path class="reg-d3" id="reg-Marche" data-region="Marche" d="M251.9,174.3 L245.5,171.8 L234.5,180.7 L225.7,180.2 L209.8,190.1 L195.0,188.1 L180.3,184.7 L195.0,188.1 L209.8,190.1 L225.7,180.2 L234.5,180.7 L245.5,171.8 L251.9,174.3 L259.1,171.8 L283.0,188.1 L295.9,200.4 L294.0,216.6 L280.3,225.3 L267.4,223.4 L255.7,227.3 Z"/>
+          <path class="reg-d3" id="reg-Umbria" data-region="Umbria" d="M227.6,247.7 L219.7,245.2 L202.2,242.3 L188.2,245.2 L181.8,253.4 L185.2,222.9 L193.5,205.8 L206.0,209.2 L218.5,215.6 L231.8,224.4 L244.7,234.6 L242.0,247.2 L232.9,251.5 Z"/>
+          <path class="reg-d3" id="reg-Lazio" data-region="Lazio" d="M227.6,247.7 L232.9,251.5 L242.0,247.2 L244.7,234.6 L231.8,224.4 L255.7,227.3 L267.4,223.4 L280.3,225.3 L295.9,200.4 L284.1,193.1 L299.3,201.4 L302.3,212.2 L293.2,222.4 L284.9,233.1 L289.4,247.2 L297.0,264.5 L299.7,280.3 L293.2,294.6 L281.8,300.3 L265.9,307.0 L248.9,312.2 L232.9,308.9 L215.5,302.2 L205.3,288.4 L207.5,271.2 L214.8,262.6 L228.0,255.4 Z"/>
+          <path class="reg-d3" id="reg-Abruzzo" data-region="Abruzzo" d="M280.3,225.3 L294.0,216.6 L302.3,212.2 L299.3,201.4 L308.0,201.4 L319.4,200.9 L327.7,209.7 L330.0,225.8 L320.9,236.0 L315.6,246.7 L306.5,257.8 L302.7,268.4 L297.0,264.5 L289.4,247.2 L284.9,233.1 L293.2,222.4 Z"/>
+          <path class="reg-d3" id="reg-Molise" data-region="Molise" d="M302.7,268.4 L306.5,257.8 L315.6,246.7 L320.9,236.0 L330.0,225.8 L338.3,234.6 L342.9,244.3 L337.6,253.9 L330.0,264.0 L320.9,273.6 L313.7,280.3 L306.5,280.3 L295.9,279.4 L299.7,280.3 Z"/>
+          <path class="reg-d3" id="reg-Campania" data-region="Campania" d="M293.2,294.6 L299.7,280.3 L295.9,279.4 L306.5,280.3 L313.7,280.3 L320.9,273.6 L330.0,264.0 L337.6,253.9 L342.9,244.3 L351.2,265.5 L358.8,280.8 L363.3,296.1 L366.7,312.2 L358.8,319.7 L348.9,328.2 L342.5,337.6 L333.8,343.2 L324.3,351.2 L314.4,352.1 L304.2,348.8 L295.1,343.7 L289.0,336.2 L280.7,324.9 L276.9,315.0 L277.7,300.8 L281.8,300.3 Z"/>
+          <path class="reg-d3" id="reg-Puglia" data-region="Puglia" d="M330.0,225.8 L338.3,234.6 L342.9,244.3 L351.2,265.5 L358.8,280.8 L363.3,296.1 L380.8,319.3 L389.1,321.6 L394.8,312.6 L396.3,298.9 L388.0,285.6 L379.6,277.9 L376.6,266.9 L375.1,249.6 L379.6,234.6 L385.7,209.7 L398.2,200.9 L408.4,213.6 L415.3,228.3 L422.8,237.0 L470.6,339.5 L469.5,366.6 L458.1,370.3 L445.2,366.6 L432.7,354.9 L422.1,346.0 L413.0,339.5 L400.1,340.9 L391.8,347.0 L382.7,356.8 L373.9,366.1 L364.1,369.3 L355.0,367.5 L347.0,363.3 L333.8,343.2 L342.5,337.6 L348.9,328.2 L358.8,319.7 L366.7,312.2 Z"/>
+          <path class="reg-d3" id="reg-Basilicata" data-region="Basilicata" d="M347.0,363.3 L355.0,367.5 L364.1,369.3 L373.9,366.1 L382.7,356.8 L391.8,347.0 L400.1,340.9 L400.1,351.6 L393.7,362.8 L386.5,371.7 L379.6,377.7 L371.7,381.4 L364.8,378.2 L358.0,372.1 L351.6,370.3 Z"/>
+          <path class="reg-d3" id="reg-Calabria" data-region="Calabria" d="M373.9,366.1 L382.7,356.8 L391.8,347.0 L400.1,340.9 L413.0,339.5 L422.1,346.0 L415.3,359.6 L408.8,373.1 L403.9,386.5 L397.8,398.5 L391.0,408.6 L383.8,420.5 L377.7,432.8 L367.9,445.5 L363.3,455.0 L360.3,465.0 L361.8,474.0 L356.9,465.0 L353.1,451.9 L353.9,437.8 L359.2,422.3 L363.7,409.0 L363.7,394.8 L371.7,381.4 L379.6,377.7 L386.5,371.7 L393.7,362.8 L400.1,351.6 Z"/>
+          <path class="reg-d3" id="reg-Sicilia" data-region="Sicilia" d="M239.8,455.9 L254.9,451.0 L276.2,455.0 L299.7,463.6 L318.2,469.5 L337.9,463.6 L348.2,457.3 L358.8,450.1 L367.1,451.4 L361.4,468.1 L341.3,483.0 L323.5,485.2 L309.1,482.1 L295.5,478.5 L277.3,476.7 L258.0,473.1 L244.3,465.9 L236.4,459.5 Z"/>
+          <path class="reg-d3" id="reg-Sardegna" data-region="Sardegna" d="M79.1,310.3 L92.3,308.9 L103.7,312.2 L112.8,317.8 L121.1,318.3 L131.0,319.7 L138.6,325.9 L141.2,342.8 L136.3,359.6 L131.0,377.2 L132.9,396.6 L129.1,409.5 L118.1,418.2 L107.5,418.6 L95.4,418.2 L86.3,409.5 L79.1,395.7 L78.7,379.5 L74.1,363.8 L71.9,347.0 L75.3,328.2 Z"/>
+            </svg>
+          </div>
+
+          <!-- TOOLTIP -->
+          <div id="map-tooltip" style="
+            position:absolute; pointer-events:none;
+            background:rgba(10,10,10,0.95); border:1px solid var(--border2);
+            border-radius:10px; padding:10px 14px; font-size:13px;
+            opacity:0; transition:opacity 0.15s; min-width:180px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index:10;
+          "></div>
+        </div>
+
+        <!-- PANNELLO LATERALE -->
+        <div style="min-width:0;">
+          <!-- LEGENDA -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Legenda</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:14px;border-radius:3px;background:var(--accent);flex-shrink:0;"></div>
+                <span style="font-size:13px;">10+ gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:14px;border-radius:3px;background:#ff8a65;flex-shrink:0;"></div>
+                <span style="font-size:13px;">5–9 gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:14px;border-radius:3px;background:#ffccbc;flex-shrink:0;"></div>
+                <span style="font-size:13px;">2–4 gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:14px;border-radius:3px;background:rgba(255,87,34,0.2);flex-shrink:0;"></div>
+                <span style="font-size:13px;">1 gara</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:20px;height:14px;border-radius:3px;background:var(--bg4);border:1px solid var(--border);flex-shrink:0;"></div>
+                <span style="font-size:13px;color:var(--text3);">Nessuna gara</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REGIONI COPERTE -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Regioni visitate</div>
+            <div id="regioni-sidebar" style="display:flex;flex-direction:column;gap:6px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- IN PROGRAMMA -->
+  <div id="page-programma" class="page">
+    <div class="profile-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;">Gare in programma</h2>
+        <button class="btn-primary" onclick="openFormProgramma()">+ Aggiungi</button>
+      </div>
+      <div id="programma-list" class="gare-list">
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <div class="empty-title">Nessuna gara in programma</div>
+          <div class="empty-sub">Aggiungi le gare che stai pianificando.</div>
+          <button class="btn-primary" onclick="openFormProgramma()">Aggiungi gara</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- STATISTICHE -->
+  <div id="page-stats" class="page">
+    <div class="profile-wrap" style="max-width:1000px;">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;">Statistiche</h2>
+      </div>
+
+      <!-- CARDS RIASSUNTO -->
+      <div class="cards c4" style="margin-bottom:28px;" id="stats-summary-cards"></div>
+
+      <!-- GRAFICI RIGA 1 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">Evoluzione maratone</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Tempo al traguardo nel tempo</div>
+          
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">Km per anno</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Chilometri totali gareggiati</div>
+          <canvas id="chart-anno" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- GRAFICI RIGA 2 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">Distribuzione sport</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Numero di gare per disciplina</div>
+          <canvas id="chart-sport" height="200"></canvas>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">Top tipi di gara</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Le gare più disputate</div>
+          <canvas id="chart-tipo" height="200"></canvas>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:20px;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px;">Gare per anno</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Numero gare completate per anno</div>
+          <canvas id="chart-sport" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- COMPARATORE -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">Comparatore gare</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Seleziona una gara per confrontare le edizioni nel tempo</div>
+
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+          <select class="form-select" id="comp-selector" style="flex:1;min-width:240px;" onchange="renderComparator()">
+            <option value="">— Seleziona una gara ripetuta —</option>
+          </select>
+          <div style="font-size:13px;color:var(--text3);" id="comp-label"></div>
+        </div>
+
+        <div id="comp-content" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+              <canvas id="chart-comp" height="220"></canvas>
+            </div>
+            <div id="comp-table"></div>
+          </div>
+        </div>
+        <div id="comp-empty" style="text-align:center;padding:40px;color:var(--text3);">
+          <div style="font-size:32px;margin-bottom:8px;">📊</div>
+          <div>Seleziona una gara ripetuta per vedere il confronto</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- FORM AGGIUNGI GARA -->
+<div class="form-overlay" id="form-overlay" onclick="closeFormOutside(event)">
+  <div class="form-box">
+    <div class="form-title" id="form-title-label">Aggiungi <span>gara</span></div>
+    <input type="hidden" id="f-edit-id" value="" />
+
+    <div class="form-grid">
+      <div class="form-group">
+        <div class="form-label">Sport <span style="color:var(--accent)">*</span></div>
+        <select class="form-select" id="f-sport" onchange="onSportChange(this.value)">
+          <option value="">Seleziona sport...</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tipo gara <span style="color:var(--accent)">*</span></label>
+          <select class="form-select" id="f-tipo-gara">
+            <option value="">Prima seleziona uno sport...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="f-data" type="date" />
+        </div>
+      </div>
+
+      <div class="form-row triple">
+        <div class="form-group">
+          <label class="form-label">Luogo / Città</label>
+          <input class="form-input" id="f-luogo" placeholder="es. Roma" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Area / Nazione</label>
+          <select class="form-select" id="f-nazione">
+            <option value="">Seleziona...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Regione</label>
+          <select class="form-select" id="f-regione">
+            <option value="">Seleziona...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="max-width:180px;">
+        <label class="form-label">Distanza (km)</label>
+        <input class="form-input" id="f-distanza" type="number" step="0.1" placeholder="42.2" />
+      </div>
+
+      <!-- TEMPI CORSA/TRAIL/BICI/NUOTO -->
+      <div id="tempo-semplice">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tempo (hh:mm:ss)</label>
+            <input class="form-input" id="f-tempo" placeholder="3:25:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Esito</label>
+            <select class="form-select" id="f-esito">
+              <option value="finisher">✅ Finisher</option>
+              <option value="dnf">❌ DNF</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPI TRIATHLON (nascosto) -->
+      <div id="tempo-tri" style="display:none;">
+        <div class="form-section-label">Frazioni triathlon</div>
+        <div class="form-row triple">
+          <div class="form-group">
+            <label class="form-label">Nuoto</label>
+            <input class="form-input" id="f-nuoto" placeholder="0:32:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">T1</label>
+            <input class="form-input" id="f-t1" placeholder="0:03:30" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bici</label>
+            <input class="form-input" id="f-bici" placeholder="2:45:00" />
+          </div>
+        </div>
+        <div class="form-row triple">
+          <div class="form-group">
+            <label class="form-label">T2</label>
+            <input class="form-input" id="f-t2" placeholder="0:02:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Corsa</label>
+            <input class="form-input" id="f-corsa-tri" placeholder="1:35:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Esito</label>
+            <select class="form-select" id="f-esito-tri">
+              <option value="finisher">✅ Finisher</option>
+              <option value="dnf">❌ DNF</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <hr class="form-divider" />
+      <div class="form-section-label">Valutazione gara</div>
+
+      <div class="form-row triple">
+        <div class="form-group">
+          <label class="form-label">Percorso</label>
+          <div class="star-rating" id="stars-percorso">
+            <button class="star-btn" onclick="setStars('percorso',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('percorso',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('percorso',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('percorso',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('percorso',5,this)">⭐</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ristori</label>
+          <div class="star-rating" id="stars-ristori">
+            <button class="star-btn" onclick="setStars('ristori',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('ristori',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('ristori',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('ristori',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('ristori',5,this)">⭐</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Organizzazione</label>
+          <div class="star-rating" id="stars-organizzazione">
+            <button class="star-btn" onclick="setStars('organizzazione',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('organizzazione',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('organizzazione',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('organizzazione',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('organizzazione',5,this)">⭐</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Note sulla gara</label>
+        <textarea class="form-textarea" id="f-note" placeholder="Come è andata? Aneddoti, impressioni, consigli per chi vuole parteciparci..."></textarea>
+      </div>
+
+      <hr class="form-divider" />
+      <div class="form-section-label">Alloggio (opzionale)</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome struttura</label>
+          <input class="form-input" id="f-hotel" placeholder="es. Hotel Roma Centro" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo struttura</label>
+          <select class="form-select" id="f-hotel-tipo">
+            <option value="">-- Opzionale --</option>
+            <option>Hotel</option><option>B&B</option><option>Airbnb</option>
+            <option>Agriturismo</option><option>Ostello</option><option>Casa amici/parenti</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row triple">
+        <div class="form-group">
+          <label class="form-label">Posizione</label>
+          <div class="star-rating" id="stars-posizione">
+            <button class="star-btn" onclick="setStars('posizione',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('posizione',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('posizione',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('posizione',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('posizione',5,this)">⭐</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pulizia</label>
+          <div class="star-rating" id="stars-pulizia">
+            <button class="star-btn" onclick="setStars('pulizia',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('pulizia',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('pulizia',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('pulizia',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('pulizia',5,this)">⭐</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Colazione</label>
+          <div class="star-rating" id="stars-colazione">
+            <button class="star-btn" onclick="setStars('colazione',1,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('colazione',2,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('colazione',3,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('colazione',4,this)">⭐</button>
+            <button class="star-btn" onclick="setStars('colazione',5,this)">⭐</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeForm()">Annulla</button>
+      <button class="btn-primary" id="form-save-btn" onclick="salvaGara()">Salva gara</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM PROGRAMMA -->
+<div class="form-overlay" id="form-programma-overlay" onclick="closeFormProgrammaOutside(event)">
+  <div class="form-box">
+    <div class="form-title">Gara in <span>programma</span></div>
+    <input type="hidden" id="form-programma-edit-id" value="" />
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Sport</label>
+          <select class="form-select" id="p-sport" onchange="selectedSportP=this.value;popolaTipoGaraP(this.value)">
+            <option value="">Seleziona sport...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo gara</label>
+          <select class="form-select" id="p-tipo-gara">
+            <option value="">Seleziona tipo...</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome gara</label>
+          <input class="form-input" id="p-nome" placeholder="es. Passatore di Romagna" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input class="form-input" id="p-data" type="date" />
+        </div>
+      </div>
+      <div class="form-row triple">
+        <div class="form-group">
+          <label class="form-label">Luogo</label>
+          <input class="form-input" id="p-luogo" placeholder="Città" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Regione</label>
+          <select class="form-select" id="p-regione">
+            <option value="">Seleziona...</option>
+            <option>Abruzzo</option><option>Emilia-Romagna</option><option>Lazio</option>
+            <option>Lombardia</option><option>Toscana</option><option>Veneto</option><option>Estero</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Distanza (km)</label>
+          <input class="form-input" id="p-distanza" type="number" step="0.1" placeholder="100" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note / obiettivo</label>
+        <textarea class="form-textarea" id="p-note" placeholder="Obiettivo tempo, strategia, motivazione..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeFormProgramma()">Annulla</button>
+      <button class="btn-primary" onclick="salvaGaraProgramma()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetailOutside(event)">
+  <div class="detail-box" id="detail-box">
+    <div class="detail-header">
+      <div style="padding-right:40px;">
+        <div id="detail-badge-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;"></div>
+        <div id="detail-nome" style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1.1;"></div>
+        <div id="detail-meta" style="color:var(--text2);font-size:13px;margin-top:6px;"></div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()">&#x2715;</button>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- IMPORT PREVIEW MODAL -->
+<div class="import-overlay" id="import-overlay" onclick="closeImportOutside(event)">
+  <div class="import-box">
+    <div class="import-header">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;">Import gare <span style="color:var(--accent);">CSV</span></div>
+        <div id="import-subtitle" style="font-size:13px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn-secondary" onclick="closeImport()">Annulla</button>
+        <button class="btn-primary" id="import-confirm-btn" onclick="confirmImport()" style="display:none;">Importa selezionate</button>
+      </div>
+    </div>
+    <div class="import-body">
+      <div id="import-dropzone" class="drop-zone"
+        ondragover="event.preventDefault();this.classList.add('dragover')"
+        ondragleave="this.classList.remove('dragover')"
+        ondrop="handleImportDrop(event)"
+        onclick="triggerImportFile()">
+        <div class="drop-zone-icon">&#x1F4C2;</div>
+        <div class="drop-zone-title">Trascina il file CSV qui</div>
+        <div style="font-size:13px;margin-bottom:16px;">oppure clicca per sfogliare</div>
+        <div style="font-size:12px;color:var(--text3);">Formato: CSV con TAB o virgola come separatore &#xB7; UTF-8</div>
+        <div style="margin-top:16px;">
+          <button class="btn-secondary" style="font-size:12px;" onclick="event.stopPropagation();downloadTemplate()">&#x1F4E5; Scarica template CSV</button>
+        </div>
+      </div>
+      <div id="import-preview" style="display:none;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+          <div id="import-stats-new" style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#81c784;"></div>
+          <div id="import-stats-dup" style="background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#ffd54f;display:none;"></div>
+          <div id="import-stats-err" style="background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#ef9a9a;display:none;"></div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="preview-table" id="import-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="import-check-all" onchange="toggleAllImport(this.checked)" /></th>
+                <th>Sport</th><th>Nome gara</th><th>Data</th><th>Luogo</th>
+                <th>Regione</th><th>Km</th><th>Tempo</th><th>Stato</th>
+              </tr>
+            </thead>
+            <tbody id="import-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODIFICA PROFILO MODAL -->
+<div class="form-overlay" id="edit-profile-overlay" onclick="if(event.target===this)closeEditProfile()">
+  <div class="form-box" style="max-width:500px;">
+    <div class="form-title">Modifica <span>profilo</span></div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input class="form-input" id="ep-nome" placeholder="Mario" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cognome</label>
+          <input class="form-input" id="ep-cognome" placeholder="Rossi" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data di nascita</label>
+          <input class="form-input" id="ep-nascita" type="date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sesso</label>
+          <select class="form-select" id="ep-sesso">
+            <option value="">—</option>
+            <option value="M">Uomo</option>
+            <option value="F">Donna</option>
+            <option value="A">Altro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="ep-email" type="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Peso (kg)</label>
+          <input class="form-input" id="ep-peso" type="number" placeholder="70" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Sport preferito</label>
+          <input class="form-input" id="ep-sport" placeholder="es. Corsa" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Visibilità profilo</label>
+          <select class="form-select" id="ep-profilo">
+            <option value="PUBBLICO">🌐 Pubblico</option>
+            <option value="PRIVATO">🔒 Privato</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn-secondary" onclick="closeEditProfile()">Annulla</button>
+      <button class="btn-primary" onclick="salvaProfiloModificato()">Salva modifiche</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast toast-success" id="toast">&#x2705; Gara salvata con successo!</div>
+
+<script>
+// ============ STATE ============
+let currentPage = 'home';
+let selectedSport = 'corsa';
+let selectedSportP = 'corsa';
+const ratings = { percorso:0, ristori:0, organizzazione:0, posizione:0, pulizia:0, colazione:0 };
+
+// Configurazione caricata dal foglio Google
+let _config = { sport:[], distanze:[], nazioni:[], regioni:[] };
+let _configLoaded = false;
+
+function getConfig() { return _config; }
+function setConfig(c) { _config = c; _configLoaded = true; }
+
+// Cache configurazione in localStorage (aggiornata ogni ora)
+function getCachedConfig() {
+  try {
+    const raw = localStorage.getItem('irun_config');
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > 3600000) return null; // scaduta dopo 1h
+    return data;
+  } catch(e) { return null; }
+}
+function setCachedConfig(data) {
+  localStorage.setItem('irun_config', JSON.stringify({ data, ts: Date.now() }));
+}
+
+// ============ CONFIG GOOGLE SHEETS ============
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
+const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
+
+// ============ STORAGE — dual layer (locale + remoto) ============
+// Le gare sono sempre tenute in localStorage come cache locale.
+// Ogni operazione di scrittura viene mandata anche al foglio Google.
+// Al primo caricamento (e ogni volta che si ricarica la pagina) si
+// sincronizza dal foglio per avere i dati aggiornati.
+
+let _syncInProgress = false;
+
+function getGare() {
+  try { return JSON.parse(localStorage.getItem('irun_gare') || '[]'); } catch(e) { return []; }
+}
+function saveGare(g) { localStorage.setItem('irun_gare', JSON.stringify(g)); }
+function getProgramma() {
+  try { return JSON.parse(localStorage.getItem('irun_programma') || '[]'); } catch(e) { return []; }
+}
+function saveProgramma(p) { localStorage.setItem('irun_programma', JSON.stringify(p)); }
+function getProfilo() {
+  // Usa profilo remoto (dal foglio) se disponibile
+  try {
+    const remoto = JSON.parse(localStorage.getItem('irun_profilo_remoto') || 'null');
+    if (remoto && remoto.utente_id) return remoto;
+  } catch(e) {}
+  return JSON.parse(localStorage.getItem('irun_profilo') || '{}');
+}
+
+// ── utente_id: è il "nome utente" che identifica le righe nel foglio
+function getUtenteId() {
+  return localStorage.getItem('irun_utente_id') || '';
+}
+function setUtenteId(id) {
+  localStorage.setItem('irun_utente_id', id);
+}
+
+// ── chiamate al foglio Google ──────────────────────────────
+
+async function gsGet(params) {
+  const uid = getUtenteId();
+  const url = GS_URL + '?token=' + encodeURIComponent(GS_TOKEN)
+    + '&utente_id=' + encodeURIComponent(uid)
+    + Object.entries(params).map(([k,v]) => '&'+k+'='+encodeURIComponent(v)).join('');
+  try {
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) console.warn('gsGet error:', json.error);
+    return json.data || null;
+  } catch(e) {
+    console.warn('gsGet fetch error:', e);
+    return null;
+  }
+}
+
+async function gsPost(action, data) {
+  const uid = getUtenteId();
+  if (data && !data.utente_id) data.utente_id = uid;
+  try {
+    const res  = await fetch(GS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ token: GS_TOKEN, action, data }),
+    });
+    const json = await res.json();
+    if (!json.ok) console.warn('gsPost error:', json.error);
+    return json.data || null;
+  } catch(e) {
+    console.warn('gsPost fetch error:', e);
+    return null;
+  }
+}
+
+// ── sincronizzazione: scarica le gare dal foglio e aggiorna localStorage
+function normalizzaData(d) {
+  if (!d) return '';
+  // Oggetto Date
+  if (d instanceof Date) {
+    if (isNaN(d)) return '';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  const s = String(d).trim();
+  if (!s || s === 'undefined' || s === 'null') return '';
+  // YYYY-MM-DD già ok
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // DD/MM/YYYY
+  const d1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (d1) return d1[3]+'-'+d1[2].padStart(2,'0')+'-'+d1[1].padStart(2,'0');
+  // DD-MM-YYYY
+  const d2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if (d2) return d2[3]+'-'+d2[2].padStart(2,'0')+'-'+d2[1].padStart(2,'0');
+  // Prova Date nativo
+  try {
+    const dt = new Date(s);
+    if (!isNaN(dt)) return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  } catch(e) {}
+  return '';
+}
+
+function fmtDataIT(d) {
+  const s = normalizzaData(d);
+  if (!s) return '';
+  const [y,m,g] = s.split('-');
+  const mesi = ['','gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  return g+' '+mesi[parseInt(m)]+' '+y;
+}
+
+function normalizzaGara(g) {
+  return {
+    ...g,
+    data: normalizzaData(g.data),
+    nome: g.nome || g.tipo_gara || '',
+    tipo_gara: g.tipo_gara || g.nome || '',
+    distanza: parseFloat(g.distanza) || 0,
+    esito: g.esito || 'finisher',
+    tempo: g.tempo || null,
+    frazioni: g.frazioni || null,
+    rating: Object.assign(
+      { percorso:0, ristori:0, organizzazione:0 },
+      g.rating || {},
+      g.ratingHotel || {}
+    ),
+    hotel: g.hotel || '',
+    hotelTipo: g.hotelTipo || '',
+    note: g.note || '',
+    pb: g.pb === true || g.pb === 'TRUE',
+    risultato: g.risultato || '',
+  };
+}
+
+async function syncFromSheet() {
+  const uid = getUtenteId();
+  if (!uid) return false;
+  showSyncBadge('sync');
+  try {
+    const gare = await gsGet({ action: 'getGare' });
+    if (Array.isArray(gare)) {
+      saveGare(gare.map(normalizzaGara));
+    }
+    const prog = await gsGet({ action: 'getProgramma' });
+    if (Array.isArray(prog) && prog.length > 0) {
+      // Merge: mantieni le gare locali non ancora sincronizzate
+      const remoteIds = new Set(prog.map(g => String(g.id)));
+      const locali = getProgramma().filter(g => !remoteIds.has(String(g.id)));
+      saveProgramma([...prog.map(g => ({ ...g, data: normalizzaData(g.data) })), ...locali]);
+    }
+    showSyncBadge('ok');
+    return true;
+  } catch(e) {
+    console.warn('syncFromSheet error:', e);
+    showSyncBadge('err');
+    return false;
+  }
+}
+
+function showSyncBadge(stato) {
+  let badge = document.getElementById('sync-badge');
+  if (!badge) return;
+  if (stato === 'sync') {
+    badge.textContent = '⟳ Sync...';
+    badge.style.color = 'var(--text3)';
+  } else if (stato === 'ok') {
+    badge.textContent = '✓ Sincronizzato';
+    badge.style.color = 'var(--green)';
+    setTimeout(() => { badge.textContent = ''; }, 3000);
+  } else {
+    badge.textContent = '⚠ Offline';
+    badge.style.color = 'var(--accent2)';
+  }
+}
+
+
+// ============ CARICA CONFIGURAZIONE DAL FOGLIO ============
+async function caricaConfigurazione() {
+  // Prima usa il cache se fresco
+  const cached = getCachedConfig();
+  if (cached && cached.sport && cached.sport.length) {
+    setConfig(cached);
+    return;
+  }
+  try {
+    const url = GS_URL
+      + '?token=' + encodeURIComponent(GS_TOKEN)
+      + '&action=getConfigurazione';
+    const res  = await fetch(url);
+    const json = await res.json();
+    console.log('Config risposta grezza:', json);
+
+    // Accetta sia { ok:true, data:{...} } che { ok:false, data:{...} } che risposta diretta
+    let cfg = null;
+    if (json && json.data && typeof json.data === 'object' && !Array.isArray(json.data)) {
+      cfg = json.data;
+    } else if (json && json.sport) {
+      // risposta diretta senza wrapper
+      cfg = json;
+    }
+
+    if (cfg && (cfg.sport || cfg.distanze)) {
+      cfg.sport    = Array.isArray(cfg.sport)    ? cfg.sport    : [];
+      cfg.distanze = Array.isArray(cfg.distanze) ? cfg.distanze : [];
+      cfg.nazioni  = Array.isArray(cfg.nazioni)  ? cfg.nazioni  : [];
+      cfg.regioni  = Array.isArray(cfg.regioni)  ? cfg.regioni  : [];
+      // Costruisci sport_distanze dal foglio configurazione (colonna sport → distanza)
+      // Il foglio ha righe con sport+distanza abbinate — usiamo la stessa riga
+      if (cfg.sport_distanze_raw) {
+        cfg.sport_distanze = cfg.sport_distanze_raw;
+      } else {
+        // Usa defaults basati su keyword
+        cfg.sport_distanze = {};
+      }
+      setConfig(cfg);
+      setCachedConfig(cfg);
+      console.log('Config caricata:', cfg);
+    } else {
+      console.warn('Config: struttura non riconosciuta, uso defaults. Risposta:', json);
+      usaConfigDefault();
+    }
+  } catch(e) {
+    console.warn('Config fetch fallito, uso defaults:', e);
+    usaConfigDefault();
+  }
+}
+
+function usaConfigDefault() {
+  const def = {
+    sport: ['Corsa','Triathlon','Trail','Ultra','Bici','Nuoto','Duathlon','Ironman'],
+    distanze: [
+      '5 km','10 km','Mezza Maratona (21,1 km)','Maratona (42,2 km)',
+      '30 km','50 km','Trail 30 km','Ultra 50 km',
+      '70.3 Ironman (113 km)','140.6 Ironman (226 km)',
+      'Triathlon Sprint (23,25 km)','Triathlon Olimpico (51,5 km)','Duathlon classico'
+    ],
+    nazioni: ['Italia','Estero','Francia','Spagna','Germania','Austria','Svizzera','Belgio','Paesi Bassi'],
+    regioni: [
+      'Abruzzo','Basilicata','Calabria','Campania','Emilia-Romagna',
+      'Friuli-Venezia Giulia','Lazio','Liguria','Lombardia','Marche',
+      'Molise','Piemonte','Puglia','Sardegna','Sicilia','Toscana',
+      'Trentino-Alto Adige','Umbria',"Valle d'Aosta",'Veneto','Estero'
+    ],
+    sport_distanze: {
+      'corsa':      ['5 km','10 km','Mezza Maratona (21,1 km)','Maratona (42,2 km)','30 km','50 km'],
+      'trail':      ['Trail 30 km','Ultra 50 km','10 km','30 km','50 km'],
+      'ultra':      ['Ultra 50 km','30 km','50 km','100 km'],
+      'bici':       ['30 km','50 km','100 km'],
+      'nuoto':      ['1 km','2 km','5 km','10 km'],
+      'triathlon':  ['Triathlon Sprint (23,25 km)','Triathlon Olimpico (51,5 km)'],
+      'duathlon':   ['Duathlon classico'],
+      'ironman':    ['70.3 Ironman (113 km)','140.6 Ironman (226 km)'],
+      'tri703':     ['70.3 Ironman (113 km)'],
+    }
+  };
+  setConfig(def);
+  console.log('Usati defaults config');
+}
+
+function popolaSelectConfig() {
+  const c = getConfig();
+  console.log('popolaSelectConfig — sport:', c.sport, 'distanze:', c.distanze);
+  // Sport nel form gara
+  const fSport = document.getElementById('f-sport');
+  if (fSport) {
+    fSport.innerHTML = '<option value="">Seleziona sport...</option>';
+    (c.sport || []).forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.toLowerCase(); o.textContent = s;
+      fSport.appendChild(o);
+    });
+  }
+  // Sport nel form programma
+  const pSport = document.getElementById('p-sport');
+  if (pSport) {
+    pSport.innerHTML = '<option value="">Seleziona sport...</option>';
+    (c.sport || []).forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.toLowerCase(); o.textContent = s;
+      pSport.appendChild(o);
+    });
+  }
+  // Nazione nel form gara
+  const fNaz = document.getElementById('f-nazione');
+  if (fNaz) {
+    fNaz.innerHTML = '<option value="">Seleziona area...</option>';
+    (c.nazioni || ['Italia', 'Estero']).forEach(n => {
+      const o = document.createElement('option'); o.value = n; o.textContent = n; fNaz.appendChild(o);
+    });
+  }
+  // Regione nel form gara
+  const fReg = document.getElementById('f-regione');
+  if (fReg) {
+    fReg.innerHTML = '<option value="">Seleziona...</option>';
+    (c.regioni || REGIONI_DEFAULT).forEach(r => {
+      const o = document.createElement('option'); o.value = r; o.textContent = r; fReg.appendChild(o);
+    });
+  }
+  // Regione nel form programma
+  const pReg = document.getElementById('p-regione');
+  if (pReg) {
+    pReg.innerHTML = '<option value="">Seleziona...</option>';
+    (c.regioni || REGIONI_DEFAULT).forEach(r => {
+      const o = document.createElement('option'); o.value = r; o.textContent = r; pReg.appendChild(o);
+    });
+  }
+  // Sport nel form registrazione
+  const rSport = document.getElementById('reg-sport');
+  if (rSport) {
+    const cur = rSport.value;
+    rSport.innerHTML = '<option value="">Seleziona...</option>';
+    (c.sport || []).forEach(s => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s; rSport.appendChild(o);
+    });
+    if (cur) rSport.value = cur;
+  }
+}
+
+const REGIONI_DEFAULT = [
+  "Abruzzo","Basilicata","Calabria","Campania","Emilia-Romagna",
+  "Friuli-Venezia Giulia","Lazio","Liguria","Lombardia","Marche",
+  "Molise","Piemonte","Puglia","Sardegna","Sicilia","Toscana",
+  "Trentino-Alto Adige","Umbria","Valle d'Aosta","Veneto","Estero"
+];
+
+function onSportChange(sport) {
+  selectedSport = sport;
+  const c = getConfig();
+  const fTipo = document.getElementById('f-tipo-gara');
+  if (!fTipo) return;
+  fTipo.innerHTML = '<option value="">Seleziona tipo gara...</option>';
+
+  // Filtra le distanze per lo sport selezionato usando la mappa sport→distanze
+  const sportDistanze = c.sport_distanze || {};
+  const sportLower = (sport||'').toLowerCase();
+  let distanzeFiltrate = [];
+
+  if (sportDistanze[sport] && sportDistanze[sport].length) {
+    // Usa la mappatura esatta dal foglio
+    distanzeFiltrate = sportDistanze[sport];
+  } else {
+    // Fallback: filtra per parole chiave
+    const parole = {
+      corsa: ['km','maratona','mezza','ultra','passatore'],
+      trail: ['trail','km','ultra'],
+      ultra: ['ultra','km','100'],
+      bici: ['km','granfondo'],
+      nuoto: ['km','m','vasca'],
+      triathlon: ['triathlon','sprint','olimpico'],
+      duathlon: ['duathlon'],
+      ironman: ['ironman','70.3','140.6','113','226'],
+      tri703: ['70.3','113'],
+    };
+    const kw = parole[sportLower] || [];
+    distanzeFiltrate = kw.length
+      ? (c.distanze||[]).filter(d => kw.some(k => d.toLowerCase().includes(k)))
+      : (c.distanze||[]);
+    // Se nessun match, mostra tutte
+    if (!distanzeFiltrate.length) distanzeFiltrate = c.distanze || [];
+  }
+
+  distanzeFiltrate.forEach(d => {
+    const o = document.createElement('option'); o.value = d; o.textContent = d; fTipo.appendChild(o);
+  });
+
+  // Mostra/nascondi frazioni triathlon
+  const isTriFlag = sportLower.includes('triathlon') || sportLower.includes('ironman') ||
+                    sportLower.includes('duathlon') || sportLower === 'tri703';
+  const ts = document.getElementById('tempo-semplice');
+  const tt = document.getElementById('tempo-tri');
+  if (ts) ts.style.display = isTriFlag ? 'none' : 'block';
+  if (tt) tt.style.display = isTriFlag ? 'block' : 'none';
+}
+
+// ============ OPEN FORM (aggiornato) ============
+// ============ NAVIGATION ============
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  currentPage = page;
+  if (page === 'home') renderHome();
+  if (page === 'gare') renderGare('tutte');
+  if (page === 'mappa') renderMappa();
+  if (page === 'profilo') renderProfilo();
+  if (page === 'programma') renderProgramma();
+  if (page === 'stats') { setTimeout(() => renderStats(), 50); }
+}
+
+// ============ SPORT ICONS ============
+function isTri(s) {
+  return ['triathlon','tri703','ironman','duathlon'].includes(s);
+}
+function sportgruppo(s) {
+  // Raggruppa tutti i tipi di triathlon sotto "triathlon"
+  if (isTri(s)) return 'triathlon';
+  return s;
+}
+function sportIcon(s) {
+  if (s === 'ironman') return '🔴'; // Ironman dot
+  if (s === 'tri703') return '🔵';  // 70.3 dot
+  if (isTri(s)) return '🏊';
+  if (s === 'ultra') return '🏔️';
+  const icons = { corsa:'🏃', trail:'⛰️', bici:'🚴', nuoto:'🏊' };
+  return icons[s] || '🏅';
+}
+function sportLabel(s) {
+  const labels = {
+    corsa:'Corsa', triathlon:'Triathlon Olimpico', tri703:'70.3',
+    ironman:'Ironman', duathlon:'Duathlon', ultra:'Ultra', trail:'Trail', bici:'Bici', nuoto:'Nuoto'
+  };
+  return labels[s] || s;
+}
+function sportColor(s) {
+  if (isTri(s)) return 'rgba(33,150,243,0.15)';
+  const c = {
+    corsa:'rgba(255,87,34,0.15)', ultra:'rgba(255,87,34,0.2)',
+    trail:'rgba(76,175,80,0.15)', bici:'rgba(255,193,7,0.15)', nuoto:'rgba(0,188,212,0.15)'
+  };
+  return c[s] || 'rgba(255,87,34,0.15)';
+}
+
+// ============ STARS ============
+function setStars(cat, val, el) {
+  ratings[cat] = val;
+  const container = document.getElementById('stars-' + cat);
+  container.querySelectorAll('.star-btn').forEach((s,i) => s.classList.toggle('active', i < val));
+}
+function renderStars(val) {
+  let s = '';
+  for(let i=1;i<=5;i++) s += `<span class="star" style="opacity:${i<=val?1:0.2}">⭐</span>`;
+  return s;
+}
+function resetRatings() {
+  Object.keys(ratings).forEach(k => { ratings[k] = 0; });
+  document.querySelectorAll('.star-rating .star-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ============ FORM GARA ============
+function openForm(garaEdit) {
+  document.getElementById('form-overlay').classList.add('open');
+  const isEdit = !!garaEdit;
+  document.getElementById('form-title-label').innerHTML = isEdit
+    ? 'Modifica <span>gara</span>'
+    : 'Aggiungi <span>gara</span>';
+  document.getElementById('f-edit-id').value = isEdit ? garaEdit.id : '';
+  document.getElementById('form-save-btn').textContent = isEdit ? 'Salva modifiche' : 'Salva gara';
+
+  resetRatings();
+  // Se config non caricata, ricarica prima di popolare
+  if (!_configLoaded || !_config.sport || !_config.sport.length) {
+    caricaConfigurazione().then(() => popolaSelectConfig());
+  } else {
+    popolaSelectConfig();
+  }
+
+  if (isEdit) {
+    // Pre-popola il form con i dati della gara
+    const g = garaEdit;
+    const fSport = document.getElementById('f-sport');
+    if (fSport) fSport.value = g.sport || '';
+    onSportChange(g.sport || '');
+    setTimeout(() => {
+      const fTipo = document.getElementById('f-tipo-gara');
+      if (fTipo) fTipo.value = g.tipo_gara || g.nome || '';
+    }, 50);
+    document.getElementById('f-data').value = g.data || '';
+    document.getElementById('f-luogo').value = g.luogo || '';
+    setTimeout(() => {
+      const fReg = document.getElementById('f-regione');
+      if (fReg) fReg.value = g.regione || '';
+      const fNaz = document.getElementById('f-nazione');
+      if (fNaz) fNaz.value = g.nazione || g.regione === 'Estero' ? 'Estero' : 'Italia';
+    }, 50);
+    document.getElementById('f-distanza').value = g.distanza || '';
+    document.getElementById('f-esito').value    = g.esito    || 'finisher';
+    document.getElementById('f-tempo').value    = g.tempo    || '';
+    document.getElementById('f-note').value     = g.note     || '';
+    document.getElementById('f-hotel').value    = g.hotel    || '';
+    document.getElementById('f-hotel-tipo').value = g.hotelTipo || '';
+    if (g.frazioni) {
+      document.getElementById('f-nuoto').value     = g.frazioni.nuoto || '';
+      document.getElementById('f-t1').value        = g.frazioni.t1    || '';
+      document.getElementById('f-bici').value      = g.frazioni.bici  || '';
+      document.getElementById('f-t2').value        = g.frazioni.t2    || '';
+      document.getElementById('f-corsa-tri').value = g.frazioni.corsa || '';
+    }
+    if (g.rating) {
+      ['percorso','ristori','organizzazione','posizione','pulizia','colazione'].forEach(k => {
+        if (g.rating[k]) setStars(k, g.rating[k], null);
+      });
+    }
+  } else {
+    document.getElementById('f-data').valueAsDate = new Date();
+    ['f-luogo','f-distanza','f-tempo','f-note','f-hotel',
+     'f-nuoto','f-t1','f-bici','f-t2','f-corsa-tri'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = '';
+    });
+    const fSport = document.getElementById('f-sport');
+    if (fSport) fSport.value = '';
+    const fTipo = document.getElementById('f-tipo-gara');
+    if (fTipo) fTipo.innerHTML = '<option value="">Prima seleziona uno sport...</option>';
+  }
+}
+
+function apriModificaGara(id) {
+  const gare = getGare();
+  const g = gare.find(x => x.id === id);
+  if (g) openForm(g);
+}
+function closeForm() { document.getElementById('form-overlay').classList.remove('open'); }
+function closeFormOutside(e) { if(e.target === document.getElementById('form-overlay')) closeForm(); }
+
+function selectSport(btn) {
+  document.querySelectorAll('#form-overlay .sport-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedSport = btn.dataset.sport;
+  const isTri = selectedSport === 'triathlon';
+  document.getElementById('tempo-semplice').style.display = isTri ? 'none' : 'block';
+  document.getElementById('tempo-tri').style.display = isTri ? 'block' : 'none';
+}
+
+function salvaGara() {
+  const tipoGara = document.getElementById('f-tipo-gara').value.trim();
+  const sportVal = document.getElementById('f-sport').value.trim();
+  if (!tipoGara) { alert('Seleziona il tipo di gara'); return; }
+  if (!sportVal) { alert('Seleziona lo sport'); return; }
+  const dataVal = document.getElementById('f-data').value;
+  if (dataVal && dataVal > new Date().toISOString().slice(0,10)) {
+    alert('⚠️ La data è futura. Per le gare in programma usa la sezione "In Programma".');
+    return;
+  }
+  const editId = document.getElementById('f-edit-id').value;
+  const isEdit = !!editId;
+  const sportLower = sportVal.toLowerCase();
+  const isTriFlag = ['triathlon','tri703','ironman','duathlon'].includes(sportLower) ||
+                    sportLower.includes('triathlon') || sportLower.includes('ironman');
+  const isTri = isTriFlag;
+  const gara = {
+    id: isEdit ? parseInt(editId) : Date.now(),
+    utente_id: getUtenteId(),
+    sport: sportVal,
+    tipo_gara: tipoGara,
+    nome: tipoGara,
+    data: document.getElementById('f-data').value,
+    luogo: document.getElementById('f-luogo').value,
+    regione: document.getElementById('f-regione').value,
+    distanza: parseFloat(document.getElementById('f-distanza').value) || 0,
+    esito: isTri ? document.getElementById('f-esito-tri').value : document.getElementById('f-esito').value,
+    tempo: isTri ? null : document.getElementById('f-tempo').value,
+    frazioni: isTri ? {
+      nuoto: document.getElementById('f-nuoto').value,
+      t1: document.getElementById('f-t1').value,
+      bici: document.getElementById('f-bici').value,
+      t2: document.getElementById('f-t2').value,
+      corsa: document.getElementById('f-corsa-tri').value,
+    } : null,
+    nazione: (document.getElementById('f-nazione') || {}).value || '',
+    rating: { ...ratings },
+    ratingHotel: { posizione: ratings.posizione, pulizia: ratings.pulizia, colazione: ratings.colazione },
+    note: document.getElementById('f-note').value,
+    hotel: document.getElementById('f-hotel').value,
+    hotelTipo: document.getElementById('f-hotel-tipo').value,
+  };
+  let gare = getGare();
+  if (isEdit) {
+    const idx = gare.findIndex(x => String(x.id) === String(editId));
+    if (idx !== -1) gare[idx] = gara;
+    else gare.unshift(gara);
+  } else {
+    gare.unshift(gara);
+  }
+  saveGare(gare);
+  closeForm();
+  showToast(isEdit ? 'Gara aggiornata! ✅' : 'Gara salvata! 🎉');
+  renderHome();
+  if (currentPage === 'gare') renderGare('tutte');
+  if (currentPage === 'mappa') renderMappa();
+  // Sync al foglio in background
+  if (getUtenteId()) {
+    const action = isEdit ? 'updateGara' : 'saveGara';
+    gsPost(action, gara).then(r => { if (r) showSyncBadge('ok'); });
+  }
+  // reset form
+  ['f-nome','f-luogo','f-distanza','f-tempo','f-note','f-hotel',
+   'f-nuoto','f-t1','f-bici','f-t2','f-corsa-tri'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+// ============ FORM PROGRAMMA ============
+function openFormProgramma() { document.getElementById('form-programma-overlay').classList.add('open'); }
+function closeFormProgramma() { document.getElementById('form-programma-overlay').classList.remove('open'); }
+function closeFormProgrammaOutside(e) { if(e.target === document.getElementById('form-programma-overlay')) closeFormProgramma(); }
+function selectSportP(btn) {
+  document.querySelectorAll('#form-programma-overlay .sport-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedSportP = btn.dataset.sport;
+}
+function salvaGaraProgramma() {
+  const nome = document.getElementById('p-nome').value.trim();
+  if (!nome) { alert('Inserisci il nome della gara'); return; }
+  const dataVal = document.getElementById('p-data').value;
+  if (dataVal && dataVal <= new Date().toISOString().slice(0,10)) {
+    alert('⚠️ La data deve essere successiva a oggi. Per le gare passate usa "Aggiungi gara".');
+    return;
+  }
+  const sportP = (document.getElementById('p-sport') || {}).value || selectedSportP;
+  const tipoGaraP = (document.getElementById('p-tipo-gara') || {}).value || nome;
+  const gara = {
+    id: Date.now(),
+    utente_id: getUtenteId() || 'locale',
+    sport: sportP,
+    tipo_gara: tipoGaraP,
+    nome: tipoGaraP || nome,
+    data: document.getElementById('p-data').value,
+    luogo: document.getElementById('p-luogo').value,
+    regione: document.getElementById('p-regione').value,
+    distanza: parseFloat(document.getElementById('p-distanza').value) || 0,
+    note: document.getElementById('p-note').value,
+  };
+  const p = getProgramma();
+  const editId = document.getElementById('form-programma-edit-id')?.value;
+  const isEdit = !!editId;
+  if (isEdit) {
+    // Sostituisci la gara esistente
+    const idx = p.findIndex(x => String(x.id) === String(editId));
+    if (idx !== -1) { gara.id = parseInt(editId); p[idx] = gara; }
+    else p.unshift(gara);
+  } else {
+    p.unshift(gara);
+  }
+  saveProgramma(p);
+  closeFormProgramma();
+  if (document.getElementById('form-programma-edit-id'))
+    document.getElementById('form-programma-edit-id').value = '';
+  showToast(isEdit ? 'Gara in programma aggiornata! ✅' : 'Gara in programma salvata! 📅');
+  renderProgramma();
+  const uid = getUtenteId();
+  if (uid && uid !== 'locale') {
+    const action = isEdit ? 'updateProgramma' : 'saveProgramma';
+    gsPost(action, { ...gara, utente_id: uid }).catch(() => {});
+  }
+  ['p-nome','p-luogo','p-distanza','p-note'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+}
+
+// ============ RENDER HOME ============
+function renderHome() {
+  const gare = getGare();
+  const finisher = gare.filter(g => g.esito === 'finisher');
+  const kmTot = gare.reduce((s,g) => s + (g.distanza||0), 0);
+  const regioni = [...new Set(gare.map(g => g.regione).filter(Boolean))];
+  const sport = [...new Set(gare.map(g => sportgruppo(g.sport)))];
+
+  document.getElementById('home-n-gare').textContent = finisher.length;
+  document.getElementById('home-km').textContent = Math.round(kmTot).toLocaleString('it');
+  document.getElementById('home-regioni').textContent = regioni.length;
+  document.getElementById('home-sport').textContent = sport.length;
+
+  const cont = document.getElementById('home-gare-list');
+  if (!gare.length) {
+    cont.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🏅</div>
+      <div class="empty-title">Nessuna gara ancora</div>
+      <div class="empty-sub">Aggiungi la tua prima gara per iniziare a costruire la tua storia sportiva.</div>
+      <button class="btn-primary" onclick="openForm()">Aggiungi gara</button>
+    </div>`;
+    return;
+  }
+  // Ordina per data decrescente e prendi le prime 5
+  const gareSorted = [...gare].sort((a,b) => (b.data||'').localeCompare(a.data||''));
+  cont.innerHTML = gareSorted.slice(0,5).map(garaCard).join('');
+  updateProfileStats();
+  renderUltimeRecensioni();
+}
+
+function renderUltimeRecensioni() {
+  const cont = document.getElementById('home-recensioni');
+  if (!cont) return;
+  const gare = getGare();
+  // Prendi le 10 gare con valutazione > 0, ordinate per data
+  const conRating = gare
+    .filter(g => g.rating && (g.rating.percorso || g.rating.ristori || g.rating.organizzazione))
+    .sort((a,b) => (b.data||'').localeCompare(a.data||''))
+    .slice(0, 10);
+  if (!conRating.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <div class="section-title" style="margin:32px 0 16px;">Ultime recensioni</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+      ${conRating.map(g => {
+        const avg = g.rating ? Math.round((g.rating.percorso + g.rating.ristori + g.rating.organizzazione)/3) : 0;
+        const dataFmt = g.data ? fmtDataIT(g.data) : '';
+        return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;" onclick="openDetail(${g.id})">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <div style="font-weight:600;font-size:14px;">${g.nome||g.tipo_gara}</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px;">${g.luogo||''}${g.regione?' · '+g.regione:''} · ${dataFmt}</div>
+            </div>
+            <div style="font-size:20px;flex-shrink:0;">${sportIcon(g.sport)}</div>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:12px;font-size:12px;color:var(--text2);">
+            <span>Percorso ${renderStars(g.rating.percorso)}</span>
+          </div>
+          <div style="margin-top:4px;display:flex;gap:12px;font-size:12px;color:var(--text2);">
+            <span>Ristori ${renderStars(g.rating.ristori)}</span>
+            <span>Org. ${renderStars(g.rating.organizzazione)}</span>
+          </div>
+          <div style="margin-top:6px;font-size:13px;font-family:'Barlow Condensed',sans-serif;font-weight:700;">
+            ${avg > 0 ? '★'.repeat(avg) + '☆'.repeat(5-avg) : '—'} <span style="color:var(--text3);font-size:11px;font-family:'Barlow',sans-serif;font-weight:400;">${g.distanza} km</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ============ RENDER GARE ============
+function filterGare(tipo, btn) {
+  document.querySelectorAll('#page-gare .tab').forEach(t => t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderGare(tipo);
+}
+// calcola PB automatico per ogni gara
+function calcolaPBAutomatici(gare) {
+  // Raggruppa per sport+tipo_gara, trova il tempo minore
+  const best = {};
+  gare.filter(g => g.esito === 'finisher').forEach(g => {
+    const chiave = (g.sport||'') + '|' + (g.tipo_gara || g.nome || '');
+    const secs = garaTempoSecs(g);
+    if (secs <= 0) return;
+    if (!best[chiave] || secs < best[chiave].secs) {
+      best[chiave] = { secs, id: g.id };
+    }
+  });
+  // Imposta pb=true solo sulla gara più veloce per ogni chiave
+  return gare.map(g => {
+    const chiave = (g.sport||'') + '|' + (g.tipo_gara || g.nome || '');
+    const secs = garaTempoSecs(g);
+    const isPB = secs > 0 && best[chiave] && best[chiave].id === g.id;
+    return { ...g, pb: isPB };
+  });
+}
+
+let _activeGareTab = 'tutte';
+
+function renderGare(tipo) {
+  _activeGareTab = tipo || 'tutte';
+  let gare = calcolaPBAutomatici(getGare());
+  gare.sort((a,b) => String(b.data||'').localeCompare(String(a.data||'')));
+
+  // Costruisci i tab dinamicamente
+  const sport_presenti = [...new Set(gare.map(g => g.sport).filter(Boolean))];
+  const ha_estero = gare.some(g => g.regione === 'Estero');
+
+  const tabsEl = document.getElementById('gare-tabs');
+  if (tabsEl) {
+    const tabList = [
+      { id: 'tutte', label: 'Tutte (' + gare.length + ')' },
+      ...sport_presenti.map(s => ({ id: 'sport_' + s, label: sportLabel(s) + ' (' + gare.filter(g=>g.sport===s).length + ')' })),
+      { id: 'italia', label: 'Italia' },
+      ...(ha_estero ? [{ id: 'estero', label: 'Estero' }] : []),
+      { id: 'pb', label: 'Personal Best' },
+    ];
+    // Costruisci tab senza onclick inline per evitare conflitti di apici
+    tabsEl.innerHTML = '';
+    tabList.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (_activeGareTab === t.id ? ' active' : '');
+      btn.textContent = t.label;
+      btn.onclick = () => renderGare(t.id);
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  const cont = document.getElementById('gare-list-main');
+  if (!gare.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-icon">🏅</div><div class="empty-title">Nessuna gara</div><div class="empty-sub">Clicca su "+ Aggiungi gara" per iniziare.</div><button class="btn-primary" onclick="openForm()">Aggiungi gara</button></div>`;
+    return;
+  }
+
+  if (tipo === 'tutte') {
+    cont.innerHTML = gare.map(garaCard).join('');
+
+  } else if (tipo && tipo.startsWith('sport_')) {
+    const sportFiltro = tipo.replace('sport_', '');
+    const gareSport = gare.filter(g => g.sport === sportFiltro);
+    // Raggruppa per tipo_gara
+    const perTipo = {};
+    gareSport.forEach(g => {
+      const k = g.tipo_gara || g.nome || 'Altro';
+      if (!perTipo[k]) perTipo[k] = [];
+      perTipo[k].push(g);
+    });
+    cont.innerHTML = Object.entries(perTipo)
+      .sort((a,b) => b[1].length - a[1].length)
+      .map(([tipo_gara, list]) => `
+        <div style="margin-bottom:24px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;">${tipo_gara}</span>
+            <span style="background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:2px 10px;font-size:12px;color:var(--text2);">${list.length} gar${list.length===1?'a':'e'}</span>
+          </div>
+          ${list.map(garaCard).join('')}
+        </div>
+      `).join('');
+
+  } else if (tipo === 'italia' || tipo === 'estero') {
+    const gareArea = gare.filter(g => tipo === 'estero' ? g.regione === 'Estero' : g.regione && g.regione !== 'Estero');
+    const perRegione = {};
+    gareArea.forEach(g => {
+      const r = g.regione || 'Senza regione';
+      if (!perRegione[r]) perRegione[r] = {};
+      const s = g.sport || 'altro';
+      if (!perRegione[r][s]) perRegione[r][s] = {};
+      const t = g.tipo_gara || g.nome || 'Altro';
+      if (!perRegione[r][s][t]) perRegione[r][s][t] = [];
+      perRegione[r][s][t].push(g);
+    });
+
+    if (!Object.keys(perRegione).length) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">${tipo==='estero'?'🌍':'🗺️'}</div><div class="empty-title">Nessuna gara ${tipo==='estero'?'all\u2019estero':'in Italia'}</div></div>`;
+      return;
+    }
+
+    cont.innerHTML = Object.entries(perRegione)
+      .sort((a,b) => {
+        const na = Object.values(a[1]).flatMap(s=>Object.values(s)).flat().length;
+        const nb = Object.values(b[1]).flatMap(s=>Object.values(s)).flat().length;
+        return nb - na;
+      })
+      .map(([regione, perSport]) => {
+        const totRegione = Object.values(perSport).flatMap(s=>Object.values(s)).flat().length;
+        const sportBlocks = Object.entries(perSport).map(([sport, perTipoG]) => {
+          const totSport = Object.values(perTipoG).flat().length;
+          const tipoBlocks = Object.entries(perTipoG).map(([tipoG, list]) =>
+            `<details style="margin-left:16px;margin-bottom:6px;">
+              <summary style="cursor:pointer;padding:6px 10px;border-radius:6px;background:var(--bg4);font-size:13px;font-weight:600;list-style:none;display:flex;justify-content:space-between;">
+                <span>${tipoG}</span><span style="color:var(--text3);font-weight:400;">${list.length} gare</span>
+              </summary>
+              <div style="margin-top:6px;">${list.map(garaCard).join('')}</div>
+            </details>`
+          ).join('');
+          return `<details style="margin-left:12px;margin-bottom:8px;">
+            <summary style="cursor:pointer;padding:8px 12px;border-radius:8px;background:var(--bg3);font-size:14px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px;justify-content:space-between;">
+              <span>${sportIcon(sport)} ${sportLabel(sport)}</span><span style="color:var(--text3);font-size:12px;font-weight:400;">${totSport} gare</span>
+            </summary>
+            <div style="margin-top:8px;">${tipoBlocks}</div>
+          </details>`;
+        }).join('');
+        return `<details open style="margin-bottom:16px;">
+          <summary style="cursor:pointer;padding:12px 16px;border-radius:10px;background:var(--bg2);border:1px solid var(--border2);font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+            <span>📍 ${regione}</span><span style="color:var(--accent);font-size:16px;">${totRegione} gare</span>
+          </summary>
+          <div style="margin-top:10px;">${sportBlocks}</div>
+        </details>`;
+      }).join('');
+
+  } else if (tipo === 'pb') {
+    // Calcola PB automatici: un solo record per ogni sport+tipo_gara
+    const pbGare = {};
+    gare.filter(g => g.esito === 'finisher').forEach(g => {
+      const secs = garaTempoSecs(g);
+      if (secs <= 0) return;
+      const k = (g.sport||'') + '|' + (g.tipo_gara||g.nome||'');
+      if (!pbGare[k] || secs < pbGare[k].secs) pbGare[k] = { ...g, secs };
+    });
+    const pbList = Object.values(pbGare).sort((a,b) => (a.sport||'').localeCompare(b.sport||''));
+    if (!pbList.length) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">⭐</div><div class="empty-title">Nessun Personal Best</div><div class="empty-sub">Aggiungi gare con i tempi per vedere i tuoi PB automatici.</div></div>`;
+      return;
+    }
+    // Raggruppa per sport
+    const perSport = {};
+    pbList.forEach(g => {
+      const s = g.sport || 'altro';
+      if (!perSport[s]) perSport[s] = [];
+      perSport[s].push(g);
+    });
+    cont.innerHTML = Object.entries(perSport).map(([sport, list]) => `
+      <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${sportColor(sport)}30;">
+          <span style="font-size:22px;">${sportIcon(sport)}</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;">${sportLabel(sport)}</span>
+        </div>
+        ${list.map(g => garaCard({...g, pb: true})).join('')}
+      </div>
+    `).join('');
+  }
+}
+
+function tempoGara(g) {
+  if (g.frazioni) return calcTempoTri(g.frazioni);
+  return g.tempo || '--:--';
+}
+
+function frazDetail(g) {
+  if (!g.frazioni) return '';
+  const f = g.frazioni;
+  const label1 = g.sport === 'duathlon' ? '🏃 C1' : '🏊 Nuoto';
+  const parts = [
+    f.nuoto ? label1+' '+f.nuoto : '',
+    f.t1 ? 'T1 '+f.t1 : '',
+    f.bici ? '🚴 Bici '+f.bici : '',
+    f.t2 ? 'T2 '+f.t2 : '',
+    f.corsa ? '🏃 Corsa '+f.corsa : '',
+  ].filter(Boolean);
+  return parts.length ? '<div style="font-size:11px;color:var(--text3);margin-top:3px;">'+parts.join(' · ')+'</div>' : '';
+}
+
+function garaCard(g) {
+  const avgRating = g.rating ? Math.round((g.rating.percorso + g.rating.ristori + g.rating.organizzazione)/3) : 0;
+  const tempoDisplay = tempoGara(g);
+  const dataFmt = g.data ? new Date(g.data + 'T12:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'short',year:'numeric'}) : '';
+  const pbBadge = g.pb ? '<span style="background:rgba(255,193,7,0.2);color:#ffd54f;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">&#x2605; PB</span>' : '';
+  const risultatoBadge = g.risultato && !['FINISHER',''].includes(g.risultato) ? `<span style="background:rgba(255,255,255,0.05);color:var(--text3);border-radius:4px;padding:1px 6px;font-size:10px;margin-left:4px;">${g.risultato}</span>` : '';
+  const hotelBadge = g.hotel ? `<span title="${g.hotel}" style="font-size:13px;margin-left:4px;">&#x1F3E8;</span>` : '';
+  return `<div class="gara-card" onclick="openDetail(${g.id})" style="cursor:pointer;" title="Clicca per i dettagli">
+    <div class="gara-type" style="background:${sportColor(g.sport)};position:relative;" title="${sportLabel(g.sport)}">${sportIcon(g.sport)}</div>
+    <div class="gara-info">
+      <div class="gara-nome">${g.nome} <span class="finisher-badge ${g.esito==='finisher'?'badge-fin':'badge-dnf'}">${g.esito==='finisher'?'Finisher':'DNF'}</span>${pbBadge}${risultatoBadge}${hotelBadge}</div>
+      <div class="gara-meta"><span style='color:var(--accent);font-size:11px;font-weight:600;'>${sportLabel(g.sport).toUpperCase()}</span> · ${dataFmt}${g.luogo?' · '+g.luogo:''}${g.regione?' · '+g.regione:''} · ${g.distanza} km${calcPassoMedio(g)?' · <span style="color:var(--text3);">'+calcPassoMedio(g)+'</span>':''}</div>
+      ${frazDetail(g)}
+    </div>
+    <div class="gara-right">
+      <div class="gara-tempo">${tempoDisplay}</div>
+      <div class="gara-voto">${renderStars(avgRating)}</div>
+    </div>
+  </div>`;
+}
+
+function calcPassoMedio(g) {
+  // Solo per sport a piedi (corsa, trail, ultra) con tempo e distanza
+  const sport = (g.sport || '').toLowerCase();
+  if (!['corsa','trail','ultra','run'].some(s => sport.includes(s))) return '';
+  const dist = g.distanza || 0;
+  if (dist <= 0) return '';
+  let secs = 0;
+  if (g.frazioni && g.frazioni.corsa) {
+    secs = parseTempoSecs(g.frazioni.corsa);
+  } else if (g.tempo) {
+    secs = parseTempoSecs(g.tempo);
+  }
+  if (secs <= 0) return '';
+  const secsPerKm = secs / dist;
+  const m = Math.floor(secsPerKm / 60);
+  const s = Math.round(secsPerKm % 60);
+  return m + "'" + String(s).padStart(2,'0') + '"/km';
+}
+
+function parseTempoSecs(t) {
+  if (!t) return 0;
+  // Supporta sia "0.16.49" che "0:16:49"
+  const parts = t.replace(/:/g,'.').split('.').map(Number);
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  if (parts.length === 2) return parts[0]*3600 + parts[1]*60;
+  return 0;
+}
+
+function calcTempoTri(f) {
+  if (!f) return '--:--';
+  const frazioni = [f.nuoto, f.t1, f.bici, f.t2, f.corsa].filter(Boolean);
+  if (!frazioni.length) return '--:--';
+  let tot = 0;
+  frazioni.forEach(t => { tot += parseTempoSecs(t); });
+  const h = Math.floor(tot/3600);
+  const m = Math.floor((tot%3600)/60);
+  const s = tot%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function renderStats() {
+  const gare = calcolaPBAutomatici(getGare());
+  if (!gare.length) return;
+
+  const finisher = gare.filter(g => g.esito === 'finisher');
+  const kmTot = gare.reduce((s,g) => s+(g.distanza||0), 0);
+  const pb = calcolaPBAutomatici(gare).filter(g => g.pb).length;
+  const regioni = new Set(gare.map(g=>g.regione).filter(r=>r&&r!=='Estero')).size;
+
+  document.getElementById('stats-summary-cards').innerHTML = `
+    <div class="card"><div class="cl">Gare totali</div><div class="cv" style="color:var(--accent)">${gare.length}</div><div class="cs">${finisher.length} finisher · ${gare.length-finisher.length} DNF</div></div>
+    <div class="card"><div class="cl">Km gareggiati</div><div class="cv" style="color:var(--accent)">${Math.round(kmTot).toLocaleString('it')}</div><div class="cs">totali</div></div>
+    <div class="card"><div class="cl">Regioni coperte</div><div class="cv" style="color:var(--accent)">${regioni}</div><div class="cs">su 20 regioni italiane</div></div>
+    <div class="card"><div class="cl">Finish Rate</div><div class="cv" style="color:var(--accent)">${gare.length ? Math.round(finisher.length/gare.length*100) : 100}%</div><div class="cs">${pb} Personal Best</div></div>
+  `;
+
+  // ── Per Anno ──
+  const perAnno = {};
+  gare.forEach(g => {
+    const y = (g.data||'').slice(0,4); if (!y) return;
+    if (!perAnno[y]) perAnno[y] = { tot:0, km:0, fin:0 };
+    perAnno[y].tot++; perAnno[y].km += g.distanza||0;
+    if (g.esito==='finisher') perAnno[y].fin++;
+  });
+  destroyChart('anno');
+  const anniSorted = Object.keys(perAnno).sort();
+  if (anniSorted.length) {
+    const ctx = document.getElementById('chart-anno')?.getContext('2d');
+    if (ctx) chartInstances['anno'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: anniSorted,
+        datasets: [
+          { label: 'Gare', data: anniSorted.map(y=>perAnno[y].tot), backgroundColor: CHART_COLORS.accent, borderRadius: 4 },
+          { label: 'Km (÷10)', data: anniSorted.map(y=>Math.round(perAnno[y].km/10)), backgroundColor: CHART_COLORS.blue, borderRadius: 4 },
+        ]
+      },
+      options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, labels: { color: CHART_COLORS.text } } } }
+    });
+  }
+
+  // ── Per Sport ──
+  const perSport = {};
+  gare.forEach(g => {
+    const s = g.sport||'altro';
+    perSport[s] = (perSport[s]||0)+1;
+  });
+  destroyChart('sport');
+  const sportLabels = Object.keys(perSport);
+  if (sportLabels.length) {
+    const ctx2 = document.getElementById('chart-sport')?.getContext('2d');
+    if (ctx2) chartInstances['sport'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: sportLabels.map(s => sportLabel(s)),
+        datasets: [{ data: sportLabels.map(s=>perSport[s]),
+          backgroundColor: sportLabels.map(s => sportColor(s)),
+          borderColor: 'var(--bg2)', borderWidth: 2 }]
+      },
+      options: { ...CHART_DEFAULTS, cutout: '60%',
+        plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, position: 'right', labels: { color: CHART_COLORS.text, font: { size: 12 } } } } }
+    });
+  }
+
+  // ── Per Tipo Gara ──
+  const perTipo = {};
+  gare.forEach(g => {
+    const t = g.tipo_gara || g.nome || 'Altro';
+    if (!perTipo[t]) perTipo[t] = 0;
+    perTipo[t]++;
+  });
+  const tipoSorted = Object.entries(perTipo).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  destroyChart('tipo');
+  if (tipoSorted.length) {
+    const ctx3 = document.getElementById('chart-tipo')?.getContext('2d');
+    if (ctx3) chartInstances['tipo'] = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: tipoSorted.map(([t])=>t),
+        datasets: [{ label: 'Gare', data: tipoSorted.map(([,n])=>n),
+          backgroundColor: CHART_COLORS.accent, borderRadius: 4 }]
+      },
+      options: { ...CHART_DEFAULTS, indexAxis: 'y' }
+    });
+  }
+
+  // ── Evoluzione Tempo (grafico dinamico) ──
+  renderEvoluzioneSelector(gare);
+}
+
+function renderEvoluzioneSelector(gare) {
+  const sel = document.getElementById('evoluzione-selector');
+  if (!sel) return;
+
+  // Popola il selector con i tipi gara che hanno almeno 2 gare con tempo
+  const conTempo = gare.filter(g => garaTempoSecs(g) > 0 && g.esito === 'finisher');
+  const perTipoCount = {};
+  conTempo.forEach(g => {
+    const k = (g.tipo_gara||g.nome||'');
+    perTipoCount[k] = (perTipoCount[k]||0) + 1;
+  });
+  const opzioni = Object.entries(perTipoCount).filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]);
+  sel.innerHTML = '<option value="">Seleziona tipo gara...</option>'
+    + opzioni.map(([k,n]) => `<option value="${k}">${k} (${n} gare)</option>`).join('');
+  sel.onchange = () => renderEvoluzioneChart(gare, sel.value);
+
+  // Se c'è già un tipo selezionato, riesegui
+  if (sel.value) renderEvoluzioneChart(gare, sel.value);
+}
+
+function renderEvoluzioneChart(gare, tipoGara) {
+  destroyChart('evoluzione');
+  const cont = document.getElementById('evoluzione-chart-wrap');
+  if (!tipoGara) { if (cont) cont.style.display = 'none'; return; }
+  if (cont) cont.style.display = 'block';
+
+  const filtrate = gare
+    .filter(g => (g.tipo_gara||g.nome||'') === tipoGara && garaTempoSecs(g) > 0 && g.esito === 'finisher')
+    .sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
+
+  if (filtrate.length < 2) return;
+
+  const ctx = document.getElementById('chart-evoluzione')?.getContext('2d');
+  if (!ctx) return;
+  const pbCalc = calcolaPBAutomatici(filtrate);
+  chartInstances['evoluzione'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: filtrate.map(g => (g.data||'').slice(0,7) + (g.luogo?' '+g.luogo.split(' ')[0]:'')),
+      datasets: [{
+        label: tipoGara,
+        data: filtrate.map(g => garaTempoSecs(g)),
+        borderColor: CHART_COLORS.accent,
+        backgroundColor: 'rgba(255,87,34,0.1)',
+        borderWidth: 2.5,
+        pointBackgroundColor: pbCalc.map(g => g.pb ? '#ffd54f' : CHART_COLORS.accent),
+        pointRadius: pbCalc.map(g => g.pb ? 8 : 4),
+        fill: true, tension: 0.3,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => secsToHMS(v) }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        tooltip: { ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => { const g = filtrate[ctx.dataIndex]; return secsToHMS(garaTempoSecs(g)) + (pbCalc[ctx.dataIndex]?.pb ? ' ★ PB' : ''); } }
+        }
+      }
+    }
+  });
+}
+
+// ============ RENDER MAPPA ============
+function regioneColor(n) {
+  if (n >= 10) return '#ff5722';
+  if (n >= 5)  return '#ff8a65';
+  if (n >= 2)  return '#ffccbc';
+  if (n >= 1)  return 'rgba(255,87,34,0.3)';
+  return null;
+}
+
+function renderMappa() {
+  const gare = getGare();
+  const regioniMap = {};
+  gare.forEach(g => {
+    if (g.regione && g.regione !== 'Estero') {
+      if (!regioniMap[g.regione]) regioniMap[g.regione] = [];
+      regioniMap[g.regione].push(g);
+    }
+  });
+
+  const nRegioni = Object.keys(regioniMap).length;
+  const kmTot = gare.reduce((s,g) => s + (g.distanza||0), 0);
+  const statsEl = document.getElementById('mappa-stats');
+  if (statsEl) statsEl.textContent = nRegioni + ' regioni · ' + Math.round(kmTot).toLocaleString('it') + ' km totali';
+
+  // Colora tutte le regioni SVG
+  document.querySelectorAll('#italy-map .reg').forEach(path => {
+    const regName = path.dataset.region || path.id.replace('reg-', '');
+    const gs = regioniMap[regName] || [];
+    const color = regioneColor(gs.length);
+    if (color) {
+      path.style.fill = color;
+      path.style.stroke = 'var(--bg)';
+      path.style.strokeWidth = '1.5';
+      path.style.cursor = 'pointer';
+      path.style.filter = '';
+    } else {
+      path.style.fill = 'var(--bg4)';
+      path.style.stroke = 'var(--border2)';
+      path.style.strokeWidth = '1';
+      path.style.cursor = 'default';
+    }
+
+    // Tooltip hover
+    const tooltip = document.getElementById('map-tooltip');
+    path.onmouseenter = function(e) {
+      if (!tooltip) return;
+      const gs2 = regioniMap[regName] || [];
+      if (!gs2.length) {
+        tooltip.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${regName}</div><div style="color:var(--text3);font-size:12px;">Nessuna gara ancora</div>`;
+      } else {
+        const kmR = gs2.reduce((s,g) => s+(g.distanza||0), 0);
+        const sport = [...new Set(gs2.map(g=>g.sport))];
+        const gareList = gs2.slice(0,4).map(g => {
+          const yr = g.data ? g.data.slice(0,4) : '';
+          return `<div style="font-size:11px;color:var(--text3);margin-top:2px;">${yr} · ${g.nome}</div>`;
+        }).join('');
+        const more = gs2.length > 4 ? `<div style="font-size:11px;color:var(--accent);margin-top:3px;">+${gs2.length-4} altre...</div>` : '';
+        tooltip.innerHTML = `
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${regName}</div>
+          <div style="color:var(--accent);font-weight:600;">${gs2.length} gar${gs2.length===1?'a':'e'} · ${Math.round(kmR)} km</div>
+          ${gareList}${more}
+        `;
+      }
+      // Posiziona tooltip
+      const mapBox = document.getElementById('italy-map').closest('div').getBoundingClientRect();
+      const x = e.clientX - mapBox.left + 12;
+      const y = e.clientY - mapBox.top + 12;
+      tooltip.style.left = Math.min(x, mapBox.width - 210) + 'px';
+      tooltip.style.top = Math.min(y, mapBox.height - 150) + 'px';
+      tooltip.style.opacity = '1';
+      if (gs2.length > 0) {
+        path.style.filter = 'url(#glow)';
+        path.style.opacity = '0.9';
+      }
+    };
+    path.onmouseleave = function() {
+      if (tooltip) tooltip.style.opacity = '0';
+      if (regioneColor((regioniMap[regName]||[]).length)) {
+        path.style.filter = '';
+        path.style.opacity = '1';
+      }
+    };
+  });
+
+  // Sidebar regioni
+  const sidebar = document.getElementById('regioni-sidebar');
+  if (!sidebar) return;
+  const sorted = Object.entries(regioniMap).sort((a,b) => b[1].length - a[1].length);
+  if (!sorted.length) {
+    sidebar.innerHTML = '<div style="font-size:13px;color:var(--text3);">Aggiungi gare per vedere le regioni</div>';
+    return;
+  }
+  sidebar.innerHTML = sorted.map(([r, gs]) => {
+    const color = regioneColor(gs.length);
+    const kmR = gs.reduce((s,g) => s+(g.distanza||0), 0);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;font-size:13px;font-weight:500;">${r}</div>
+      <div style="font-size:12px;color:var(--text2);">${gs.length} gare</div>
+      <div style="font-size:11px;color:var(--text3);">${Math.round(kmR)}km</div>
+    </div>`;
+  }).join('');
+
+  // Estero
+  const estero = gare.filter(g => g.regione === 'Estero');
+  if (estero.length) {
+    sidebar.innerHTML += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;">
+      <div style="width:10px;height:10px;border-radius:50%;background:#2196f3;flex-shrink:0;"></div>
+      <div style="flex:1;font-size:13px;font-weight:500;">Estero 🌍</div>
+      <div style="font-size:12px;color:var(--text2);">${estero.length} gare</div>
+    </div>`;
+  }
+
+  // Carica mappa D3
+  loadMap();
+}
+
+// ============ RENDER PROFILO ============
+function renderProfilo(profiloEsterno) {
+  const mioUid = getUtenteId();
+  const profilo = profiloEsterno || getProfilo();
+  const isOwner = !profiloEsterno || String(profilo.utente_id||'').toLowerCase() === String(mioUid||'').toLowerCase();
+  const isPubblico = profilo.profilo_pubblico !== false &&
+                     String(profilo.profilo||'').toUpperCase() !== 'PRIVATO';
+
+  // Nome
+  const nome = [profilo.nome||'', profilo.cognome||''].filter(Boolean).join(' ')
+             || profilo.utente_id || mioUid || '—';
+  document.getElementById('profile-name').textContent = nome;
+  const initials = nome.split(' ').map(p=>p[0]).filter(Boolean).join('').slice(0,2).toUpperCase() || '?';
+  const avatarEl = document.getElementById('avatar-initials');
+  if (avatarEl) avatarEl.textContent = initials;
+  renderNavUser();
+
+  // Profilo privato altrui
+  if (!isOwner && !isPubblico) {
+    const metaEl = document.getElementById('profile-meta');
+    if (metaEl) metaEl.innerHTML = '<span style="color:var(--text3);">🔒 Profilo privato</span>';
+    ['profile-sport','profile-email-row','profile-details-row'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.innerHTML = '';
+    });
+    document.getElementById('profile-visibility').textContent = '';
+    const statsEl = document.querySelector('.profile-stats');
+    if (statsEl) statsEl.style.display = 'none';
+    return;
+  }
+
+  // Mostra tutto
+  const statsEl = document.querySelector('.profile-stats');
+  if (statsEl) statsEl.style.display = '';
+
+  // Meta principale: data nascita, sesso, peso
+  const metaParts = [];
+  if (profilo.data_nascita) metaParts.push('🎂 ' + fmtDataIT(profilo.data_nascita));
+  if (profilo.sesso)        metaParts.push(profilo.sesso === 'M' ? '♂ Uomo' : profilo.sesso === 'F' ? '♀ Donna' : profilo.sesso);
+  if (profilo.peso)         metaParts.push('⚖️ ' + profilo.peso + ' kg');
+  const metaEl = document.getElementById('profile-meta');
+  if (metaEl) metaEl.textContent = metaParts.join(' · ');
+
+  // Email — solo per il proprietario
+  const emailEl = document.getElementById('profile-email');
+  if (emailEl) emailEl.textContent = (isOwner && profilo.email) ? '✉️ ' + profilo.email : '';
+
+  // Visibilità — solo per il proprietario
+  const pubEl = document.getElementById('profile-visibility');
+  if (pubEl) pubEl.textContent = isOwner ? (isPubblico ? '🌐 Profilo pubblico' : '🔒 Profilo privato') : '';
+
+  // Sport preferito
+  const sportEl = document.getElementById('profile-sport');
+  if (sportEl) {
+    const sport = profilo.sport_preferito || profilo.sport_praticati || '';
+    const lista = Array.isArray(sport)
+      ? sport
+      : (sport ? sport.split(',').map(s=>s.trim()).filter(Boolean) : []);
+    sportEl.innerHTML = lista.length
+      ? lista.map(s => `<span style="background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">${sportIcon(s.toLowerCase())} ${s}</span>`).join('')
+      : '<span style="color:var(--text3);font-size:13px;">—</span>';
+  }
+
+  updateProfileStats();
+}
+
+
+function updateProfileStats() {
+  const gare = getGare();
+  const finisher = gare.filter(g => g.esito === 'finisher');
+  const kmTot = gare.reduce((s,g) => s+(g.distanza||0), 0);
+  const regioni = [...new Set(gare.map(g=>g.regione).filter(Boolean))];
+  const rate = gare.length ? Math.round(finisher.length/gare.length*100) : 100;
+  ['ps-gare','ps-km','ps-regioni','ps-finisher'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(i===0) el.textContent = gare.length;
+    if(i===1) el.textContent = Math.round(kmTot).toLocaleString('it');
+    if(i===2) el.textContent = regioni.length;
+    if(i===3) el.textContent = rate+'%';
+  });
+  renderProfiloPB();
+}
+
+function renderProfiloPB() {
+  const grid = document.getElementById('pb-grid-auto');
+  if (!grid) return;
+  const gare = calcolaPBAutomatici(getGare());
+  const pbGare = gare.filter(g => g.pb && garaTempoSecs(g) > 0);
+  if (!pbGare.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1;">Nessun PB ancora — aggiungi gare con i tempi.</div>';
+    return;
+  }
+  grid.innerHTML = pbGare
+    .sort((a,b) => (a.sport||'').localeCompare(b.sport||''))
+    .map(g => `
+      <div class="pb-card" onclick="openDetail(${g.id})" style="cursor:pointer;" title="Clicca per vedere la gara">
+        <div class="pb-dist">${sportIcon(g.sport)} ${g.tipo_gara||g.nome||''}</div>
+        <div class="pb-time">${tempoGara(g)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${(g.data||'').slice(0,4)} · ${g.luogo||''}</div>
+      </div>
+    `).join('');
+}
+
+function editProfile() {
+  const p = getProfilo();
+  // Apri modal modifica profilo
+  document.getElementById('edit-profile-overlay').classList.add('open');
+  // Pre-popola i campi con i dati attuali (solo campi del foglio UTENTI)
+  document.getElementById('ep-nome').value         = p.nome        || '';
+  document.getElementById('ep-cognome').value      = p.cognome     || '';
+  document.getElementById('ep-nascita').value      = p.data_nascita|| '';
+  document.getElementById('ep-email').value        = p.email       || '';
+  document.getElementById('ep-sesso').value        = p.sesso       || '';
+  document.getElementById('ep-peso').value         = p.peso        || '';
+  document.getElementById('ep-sport').value        = p.sport_preferito || '';
+  document.getElementById('ep-profilo').value      = p.profilo === 'PRIVATO' ? 'PRIVATO' : 'PUBBLICO';
+}
+
+function closeEditProfile() {
+  document.getElementById('edit-profile-overlay').classList.remove('open');
+}
+
+async function salvaProfiloModificato() {
+  const uid = getUtenteId();
+  if (!uid) { alert('Devi essere loggato per modificare il profilo'); return; }
+
+  const aggiornamenti = {
+    utente_id:      uid,
+    nome:           document.getElementById('ep-nome').value.trim(),
+    cognome:        document.getElementById('ep-cognome').value.trim(),
+    data_nascita:   document.getElementById('ep-nascita').value,
+    email:          document.getElementById('ep-email').value.trim(),
+    sesso:          document.getElementById('ep-sesso').value,
+    peso:           document.getElementById('ep-peso').value,
+    sport_preferito:document.getElementById('ep-sport').value.trim(),
+    profilo_pubblico: document.getElementById('ep-profilo').value !== 'PRIVATO',
+    profilo:        document.getElementById('ep-profilo').value,
+  };
+
+  // Aggiorna localStorage subito
+  const pAttuale = getProfilo();
+  const pNuovo = { ...pAttuale, ...aggiornamenti };
+  localStorage.setItem('irun_profilo_remoto', JSON.stringify(pNuovo));
+
+  closeEditProfile();
+  renderProfilo();
+  showToast('Profilo aggiornato! ✅');
+
+  // Sync al foglio in background
+  if (uid) {
+    const res = await gsPost('aggiornaUtente', aggiornamenti);
+    if (res && res.error) showToast('⚠️ ' + res.error);
+    else showSyncBadge('ok');
+  }
+}
+
+// ============ RENDER PROGRAMMA ============
+function renderProgramma() {
+  const lista = getProgramma();
+  const cont = document.getElementById('programma-list');
+  if (!lista.length) {
+    cont.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📅</div>
+      <div class="empty-title">Nessuna gara in programma</div>
+      <div class="empty-sub">Aggiungi le gare che stai pianificando.</div>
+      <button class="btn-primary" onclick="openFormProgramma()">Aggiungi gara</button>
+    </div>`;
+    return;
+  }
+  const oggi = new Date();
+  cont.innerHTML = '';
+  lista.forEach(g => {
+    const dataFmt = g.data ? fmtDataIT(g.data) : '';
+    const dataGara = g.data ? new Date(g.data+'T12:00:00') : null;
+    const giorni = dataGara ? Math.ceil((dataGara - oggi) / (1000*60*60*24)) : null;
+    const countdown = giorni !== null ? (giorni > 0 ? `<span style="color:var(--accent);font-weight:600;">tra ${giorni} giorni</span>` : `<span style="color:var(--green);">oggi!</span>`) : '';
+    const card = document.createElement('div');
+    card.className = 'gara-card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="gara-type" style="background:${sportColor(g.sport)}">${sportIcon(g.sport)}</div>
+      <div class="gara-info">
+        <div class="gara-nome">${g.nome||g.tipo_gara||''} ${countdown}</div>
+        <div class="gara-meta">${dataFmt}${g.luogo?' · '+g.luogo:''} · ${g.distanza}km${g.regione?' · '+g.regione:''}</div>
+        ${g.note ? `<div style="font-size:12px;color:var(--text3);margin-top:4px;">🎯 ${g.note}</div>` : ''}
+      </div>
+      <div class="gara-right" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <button style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">📥 Archivia</button>
+        <button style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;">✏️ Modifica</button>
+        <button style="background:rgba(244,67,54,0.1);color:#ef9a9a;border:1px solid rgba(244,67,54,0.2);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;">🗑️ Elimina</button>
+      </div>`;
+    // Assegna eventi dopo creazione
+    const btns = card.querySelectorAll('button');
+    btns[0].onclick = e => { e.stopPropagation(); sposta2Gare(g.id); };
+    btns[1].onclick = e => { e.stopPropagation(); apriModificaProgramma(g.id); };
+    btns[2].onclick = e => { e.stopPropagation(); eliminaGaraProgramma(g.id); };
+    return card;
+    cont.appendChild(card);
+  });
+}
+
+function apriModificaProgramma(id) {
+  const lista = getProgramma();
+  const g = lista.find(x => x.id === id);
+  if (!g) return;
+  // Riusa form programma pre-popolato
+  openFormProgramma();
+  setTimeout(() => {
+    document.getElementById('form-programma-edit-id').value = id;
+    const ps = document.getElementById('p-sport');
+    if (ps) { ps.value = g.sport||''; selectedSportP = g.sport||''; }
+    setTimeout(() => {
+      const pt = document.getElementById('p-tipo-gara');
+      if (pt) { popolaTipoGaraP(g.sport); setTimeout(() => { pt.value = g.tipo_gara||g.nome||''; }, 50); }
+    }, 50);
+    document.getElementById('p-data').value     = g.data     || '';
+    document.getElementById('p-luogo').value    = g.luogo    || '';
+    const pr = document.getElementById('p-regione');
+    if (pr) setTimeout(() => { pr.value = g.regione||''; }, 60);
+    document.getElementById('p-distanza').value = g.distanza || '';
+    document.getElementById('p-note').value     = g.note     || '';
+    // Aggiorna titolo e bottone
+    const titleEl = document.querySelector('#form-programma-overlay .form-title');
+    if (titleEl) titleEl.innerHTML = 'Modifica <span>gara in programma</span>';
+  }, 100);
+}
+
+function eliminaGaraProgramma(id) {
+  if (!confirm('Eliminare questa gara dal programma?')) return;
+  let lista = getProgramma();
+  lista = lista.filter(g => g.id !== id);
+  saveProgramma(lista);
+  renderProgramma();
+  showToast('Gara eliminata dal programma');
+  const uid = getUtenteId();
+  if (uid) gsPost('deleteProgramma', { id, utente_id: uid }).catch(()=>{});
+}
+
+function sposta2Gare(id) {
+  const lista = getProgramma();
+  const idx = lista.findIndex(g => g.id === id);
+  if(idx === -1) return;
+  const garaP = lista[idx];
+  lista.splice(idx, 1);
+  saveProgramma(lista);
+  renderProgramma();
+  if (getUtenteId()) gsPost('deleteProgramma', { id, utente_id: getUtenteId() });
+  // Apri il form pre-popolato con i dati della gara in programma
+  // Costruisci oggetto "bozza" senza id (sarà una nuova gara)
+  const bozza = {
+    id: null,
+    sport: garaP.sport || '',
+    tipo_gara: garaP.tipo_gara || garaP.nome || '',
+    nome: garaP.tipo_gara || garaP.nome || '',
+    data: garaP.data || '',
+    luogo: garaP.luogo || '',
+    regione: garaP.regione || '',
+    distanza: garaP.distanza || 0,
+    note: garaP.note || '',
+  };
+  openForm(bozza);
+  showToast('Completa il risultato e salva! 🏅');
+}
+
+// ============ RICERCA GLOBALE ============
+function onGlobalSearch(q) {
+  const dd = document.getElementById('search-dropdown');
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  const gare = getGare();
+  const ql = q.toLowerCase();
+  const found = gare.filter(g =>
+    (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
+    (g.luogo||'').toLowerCase().includes(ql) ||
+    (g.regione||'').toLowerCase().includes(ql) ||
+    (g.sport||'').toLowerCase().includes(ql)
+  ).slice(0, 8);
+  if (!found.length) {
+    dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:var(--text3);">Nessun risultato</div>';
+    dd.style.display = 'block';
+    return;
+  }
+  dd.innerHTML = found.map(g => {
+    const dataFmt = g.data ? fmtDataIT(g.data) : '';
+    return `<div onclick="openDetail(${g.id});closeSearch();"
+      style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"
+      onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">`
+      + `<span style="font-size:20px;">${sportIcon(g.sport)}</span>`
+      + `<div><div style="font-size:13px;font-weight:600;">${g.nome||g.tipo_gara}</div>`
+      + `<div style="font-size:11px;color:var(--text3);">${dataFmt} · ${g.luogo||''} · ${g.distanza}km</div></div></div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+function closeSearch() {
+  const dd = document.getElementById('search-dropdown');
+  if (dd) dd.style.display = 'none';
+  const inp = document.getElementById('global-search');
+  if (inp) inp.value = '';
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============ DETAIL MODAL ============
+function openDetail(id) {
+  const gare = getGare();
+  const g = gare.find(x => x.id === id);
+  if (!g) return;
+
+  const dataFmt = g.data ? fmtDataIT(g.data) : '';
+  const tempoTot = tempoGara(g);
+  const avgRating = g.rating ? Math.round((g.rating.percorso + g.rating.ristori + g.rating.organizzazione)/3) : 0;
+  const avgHotel = g.rating && g.hotel ? Math.round((g.rating.posizione + g.rating.pulizia + g.rating.colazione)/3) : 0;
+
+  // Header
+  document.getElementById('detail-badge-row').innerHTML = `
+    <span style="background:${sportColor(g.sport)};border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;">${sportIcon(g.sport)} ${sportLabel(g.sport)}</span>
+    <span class="finisher-badge ${g.esito==='finisher'?'badge-fin':'badge-dnf'}">${g.esito==='finisher'?'Finisher':'DNF'}</span>
+    ${g.pb ? '<span style="background:rgba(255,213,79,0.2);color:#ffd54f;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;">&#x2605; Personal Best</span>' : ''}
+    ${g.risultato && !['FINISHER',''].includes(g.risultato) ? `<span style="background:rgba(255,255,255,0.05);color:var(--text2);border-radius:6px;padding:3px 10px;font-size:12px;">${g.risultato}</span>` : ''}
+  `;
+  document.getElementById('detail-nome').textContent = g.nome;
+  document.getElementById('detail-meta').innerHTML = `${dataFmt}${g.luogo ? ' &nbsp;&#x00B7;&nbsp; ' + g.luogo : ''}${g.regione ? ' &nbsp;&#x00B7;&nbsp; ' + g.regione : ''} &nbsp;&#x00B7;&nbsp; ${g.distanza} km`;
+
+  // Body
+  let html = '';
+
+  // Tempo / Frazioni
+  html += `<div class="detail-section">
+    <div class="detail-section-title">Risultato</div>`;
+
+  if (g.frazioni) {
+    const f = g.frazioni;
+    const label1 = g.sport === 'duathlon' ? '&#x1F3C3; C1' : '&#x1F3CA; Nuoto';
+    html += `<div style="margin-bottom:10px;text-align:center;">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:var(--accent);">${tempoTot}</span>
+      <span style="color:var(--text3);font-size:13px;margin-left:8px;">tempo totale</span>
+    </div>
+    <div class="fraz-row">
+      <div class="fraz-box"><div class="fraz-label">${label1}</div><div class="fraz-val">${f.nuoto||'—'}</div></div>
+      <div class="fraz-box"><div class="fraz-label">T1</div><div class="fraz-val">${f.t1||'—'}</div></div>
+      <div class="fraz-box"><div class="fraz-label">&#x1F6B4; Bici</div><div class="fraz-val">${f.bici||'—'}</div></div>
+      <div class="fraz-box"><div class="fraz-label">T2</div><div class="fraz-val">${f.t2||'—'}</div></div>
+      <div class="fraz-box"><div class="fraz-label">&#x1F3C3; Corsa</div><div class="fraz-val">${f.corsa||'—'}</div></div>
+    </div>`;
+  } else {
+    html += `<div style="text-align:center;">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:var(--accent);">${tempoTot !== '--:--' ? tempoTot : '—'}</span>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Valutazione gara
+  if (g.rating && (g.rating.percorso || g.rating.ristori || g.rating.organizzazione)) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Valutazione gara &nbsp;<span style="color:var(--accent);font-size:16px;">${renderStars(avgRating)}</span></div>
+      <div class="rating-row">
+        <div class="rating-box"><div class="rating-box-label">Percorso</div><div class="rating-box-val">${renderStars(g.rating.percorso)}</div></div>
+        <div class="rating-box"><div class="rating-box-label">Ristori</div><div class="rating-box-val">${renderStars(g.rating.ristori)}</div></div>
+        <div class="rating-box"><div class="rating-box-label">Organizzazione</div><div class="rating-box-val">${renderStars(g.rating.organizzazione)}</div></div>
+      </div>
+    </div>`;
+  }
+
+  // Note
+  if (g.note && g.note.trim()) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Note &amp; impressioni</div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:14px;color:var(--text2);line-height:1.7;">${g.note.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  }
+
+  // Alloggio
+  if (g.hotel && g.hotel.trim()) {
+    const hotelIcons = { 'Hotel':'&#x1F3E8;','B&B':'&#x1F3E0;','Airbnb':'&#x1F511;','Agriturismo':'&#x1F33F;','Ostello':'&#x1F6CC;','Casa amici/parenti':'&#x1F46B;' };
+    const icon = hotelIcons[g.hotelTipo] || '&#x1F3E8;';
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Alloggio ${avgHotel > 0 ? '<span style="color:var(--accent);font-size:16px;">'+renderStars(avgHotel)+'</span>' : ''}</div>
+      <div class="hotel-card">
+        <div class="hotel-icon">${icon}</div>
+        <div class="hotel-info-detail">
+          <div class="hotel-name">${g.hotel}</div>
+          ${g.hotelTipo ? `<div class="hotel-tipo">${g.hotelTipo}</div>` : ''}
+          ${(g.rating && (g.rating.posizione || g.rating.pulizia || g.rating.colazione)) ? `
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;">
+            <div><div style="font-size:11px;color:var(--text3);">Posizione</div><div style="font-size:15px;">${renderStars(g.rating.posizione)}</div></div>
+            <div><div style="font-size:11px;color:var(--text3);">Pulizia</div><div style="font-size:15px;">${renderStars(g.rating.pulizia)}</div></div>
+            <div><div style="font-size:11px;color:var(--text3);">Colazione</div><div style="font-size:15px;">${renderStars(g.rating.colazione)}</div></div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Azioni
+  html += `<div style="display:flex;gap:10px;margin-top:4px;">
+    <button class="btn-primary" style="flex:2;" onclick="apriModificaGara(${g.id});closeDetail();">✏️ Modifica</button>
+    <button class="btn-secondary" style="flex:1;" onclick="deleteGara(${g.id})">🗑️ Elimina</button>
+  </div>`;
+
+  document.getElementById('detail-body').innerHTML = html;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+
+function popolaTipoGaraP(sport) {
+  const sel = document.getElementById('p-tipo-gara');
+  if (!sel) return;
+  const c = getConfig();
+  sel.innerHTML = '<option value="">Seleziona tipo...</option>';
+  (c.distanze || []).forEach(d => {
+    const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
+  });
+}
+function closeDetailOutside(e) { if (e.target === document.getElementById('detail-overlay')) closeDetail(); }
+
+function deleteGara(id) {
+  if (!confirm('Eliminare questa gara?')) return;
+  let gare = getGare();
+  const uid = getUtenteId();
+  gare = gare.filter(g => g.id !== id);
+  saveGare(gare);
+  closeDetail();
+  showToast('Gara eliminata');
+  renderHome();
+  if (currentPage === 'gare') renderGare('tutte');
+  if (currentPage === 'mappa') renderMappa();
+  if (currentPage === 'stats') renderStats();
+  if (uid) gsPost('deleteGara', { id: id, utente_id: uid });
+}
+
+// ============ IMPORT CSV CON PREVIEW ============
+let importPreviewData = []; // parsed rows
+
+function openImportModal() {
+  document.getElementById('import-overlay').classList.add('open');
+  document.getElementById('import-dropzone').style.display = 'block';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-subtitle').textContent = 'Carica un file CSV per vedere l\'anteprima prima di importare';
+  importPreviewData = [];
+}
+
+function closeImport() { document.getElementById('import-overlay').classList.remove('open'); }
+function closeImportOutside(e) { if (e.target === document.getElementById('import-overlay')) closeImport(); }
+
+function triggerImportFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,.tsv,.txt';
+  input.onchange = e => { if (e.target.files[0]) parseImportFile(e.target.files[0]); };
+  input.click();
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();
+  document.getElementById('import-dropzone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) parseImportFile(file);
+}
+
+function parseImportFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l => l.trim());
+    if (!lines.length) { showToast('File vuoto o non valido'); return; }
+
+    // Detect separator: tab vs comma
+    const sep = (lines[0].split('\t').length > lines[0].split(',').length) ? '\t' : ',';
+    const start = lines[0].toLowerCase().includes('data') || lines[0].toLowerCase().includes('sport') || lines[0].toLowerCase().includes('nome') ? 1 : 0;
+
+    const gareEsistenti = getGare();
+    const esistenti = new Set(gareEsistenti.map(g => (g.nome + '|' + g.data).toLowerCase()));
+
+    importPreviewData = [];
+    let errCount = 0;
+
+    for (let i = start; i < lines.length; i++) {
+      const raw = lines[i];
+      let cols;
+
+      // Se sep=TAB, usa split diretto
+      if (sep === '\t') {
+        cols = raw.split('\t').map(c => c.trim().replace(/^"|"$/g,''));
+      } else {
+        // CSV con virgola: gestisci campi tra virgolette
+        cols = [];
+        let cur = ''; let inQ = false;
+        for (let ci = 0; ci < raw.length; ci++) {
+          const ch = raw[ci];
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+          else cur += ch;
+        }
+        cols.push(cur.trim());
+      }
+
+      if (cols.length < 3) { errCount++; continue; }
+
+      try {
+        // Formato standard I-Run CSV:
+        // sport, nome, data, luogo, regione, distanza, tempo, esito, note, hotel, hotelTipo
+        // Oppure formato TSV legacy (colonne 0-24)
+        let parsed;
+
+        if (cols.length >= 6 && (cols[0].includes('/') || cols[2].includes('-') || cols[2].includes('/'))) {
+          // Formato TSV legacy (data in col 0)
+          parsed = parseLegacyRow(cols, i);
+        } else {
+          // Formato standard I-Run (sport in col 0)
+          parsed = parseStandardRow(cols);
+        }
+
+        if (!parsed) { errCount++; continue; }
+
+        const chiave = (parsed.nome + '|' + parsed.data).toLowerCase();
+        parsed.isDuplicate = esistenti.has(chiave);
+        parsed.selected = !parsed.isDuplicate;
+        importPreviewData.push(parsed);
+      } catch(err) {
+        errCount++;
+        console.warn('Riga ' + i + ' saltata:', err);
+      }
+    }
+
+    renderImportPreview(errCount, file.name);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseLegacyRow(cols, i) {
+  // Formato TSV storico (come nel vecchio importCSV)
+  const dataRaw = cols[0];
+  const attivita = cols[1] || 'corsa';
+  const luogo = cols[2] || '';
+  const regione = ['GBR','ESP','NLD','FRA','DEU','USA'].includes(cols[3]) ? 'Estero' : (cols[3] || '');
+  const distNome = cols[4] || '';
+  const km = parseFloat((cols[5] || '0').replace(',','.')) || 0;
+  const risultato = cols[9] || '';
+  const pb = (cols[24] || '').trim().toLowerCase() === 'x';
+
+  let dataISO = dataRaw;
+  const dp = dataRaw.split('/');
+  if (dp.length === 3) {
+    let y = dp[2].trim();
+    if (y.length === 2) y = (parseInt(y) <= 30 ? '20' : '19') + y;
+    dataISO = y + '-' + dp[1].padStart(2,'0') + '-' + dp[0].padStart(2,'0');
+  }
+
+  const a = attivita.toLowerCase();
+  const d = distNome.toLowerCase();
+  let sport = 'corsa';
+  if (a.includes('duathlon')) sport = 'duathlon';
+  else if (a.includes('triathlon')) {
+    if (d.includes('140') || km >= 200) sport = 'ironman';
+    else if (d.includes('70') || km >= 100) sport = 'tri703';
+    else sport = 'triathlon';
+  } else if (d.includes('ultra') || km >= 50) sport = 'ultra';
+
+  let nome = distNome + ' ' + luogo;
+  if (d.includes('mezza')) nome = 'Mezza Maratona di ' + luogo;
+  else if (d.includes('maratona') && !d.includes('ultra')) nome = 'Maratona di ' + luogo;
+  else if (d.includes('ultramaratona')) nome = 'Ultra ' + luogo;
+  else if (d.includes('140.6')) nome = 'Ironman ' + luogo;
+  else if (d.includes('70.3')) nome = '70.3 ' + luogo;
+  else if (d.includes('olimpico')) nome = 'Triathlon Olimpico ' + luogo;
+  else if (d.includes('sprint')) nome = 'Triathlon Sprint ' + luogo;
+  nome = nome.trim();
+
+  const isTriFlag = ['triathlon','tri703','ironman','duathlon'].includes(sport);
+  const tempo = !isTriFlag ? (cols[23] || '') : null;
+  const frazioni = isTriFlag ? {
+    nuoto: cols[10]||'', t1: cols[14]||'', bici: cols[15]||'', t2: cols[19]||'', corsa: cols[20]||''
+  } : null;
+
+  return { sport, nome, data: dataISO, luogo, regione, distanza: km,
+    esito: 'finisher', tempo, frazioni, risultato, pb,
+    note:'', hotel:'', hotelTipo:'' };
+}
+
+function parseStandardRow(cols) {
+  // Formato standard I-Run:
+  // sport | nome | data(YYYY-MM-DD o DD/MM/YYYY) | luogo | regione | distanza | tempo | esito | note | hotel | hotelTipo
+  const sport = (cols[0]||'corsa').toLowerCase();
+  const nome = (cols[1]||'').trim();
+  if (!nome) return null;
+
+  let dataRaw = (cols[2]||'').trim();
+  let dataISO = dataRaw;
+  const dp = dataRaw.split('/');
+  if (dp.length === 3) {
+    let y = dp[2].trim();
+    if (y.length === 2) y = (parseInt(y) <= 30 ? '20' : '19') + y;
+    dataISO = y + '-' + dp[1].padStart(2,'0') + '-' + dp[0].padStart(2,'0');
+  }
+
+  const luogo = (cols[3]||'').trim();
+  const regione = (cols[4]||'').trim();
+  const distanza = parseFloat((cols[5]||'0').replace(',','.')) || 0;
+  const tempo = (cols[6]||'').trim() || null;
+  const esito = (cols[7]||'finisher').toLowerCase().includes('dnf') ? 'dnf' : 'finisher';
+  const note = (cols[8]||'').trim();
+  const hotel = (cols[9]||'').trim();
+  const hotelTipo = (cols[10]||'').trim();
+
+  return { sport, nome, data: dataISO, luogo, regione, distanza,
+    esito, tempo, frazioni: null, risultato: '', pb: false,
+    note, hotel, hotelTipo };
+}
+
+function renderImportPreview(errCount, fileName) {
+  document.getElementById('import-dropzone').style.display = 'none';
+  document.getElementById('import-preview').style.display = 'block';
+
+  const nuove = importPreviewData.filter(g => !g.isDuplicate).length;
+  const dup = importPreviewData.filter(g => g.isDuplicate).length;
+
+  document.getElementById('import-subtitle').textContent = `File: ${fileName} — ${importPreviewData.length + errCount} righe lette`;
+  document.getElementById('import-stats-new').textContent = `${nuove} gare nuove`;
+  const dupEl = document.getElementById('import-stats-dup');
+  dupEl.textContent = `${dup} duplicate`;
+  dupEl.style.display = dup > 0 ? 'block' : 'none';
+  const errEl = document.getElementById('import-stats-err');
+  errEl.textContent = `${errCount} righe non valide`;
+  errEl.style.display = errCount > 0 ? 'block' : 'none';
+
+  if (nuove > 0) {
+    document.getElementById('import-confirm-btn').style.display = 'block';
+    document.getElementById('import-confirm-btn').textContent = `Importa ${nuove} gare`;
+  }
+
+  const tbody = document.getElementById('import-table-body');
+  tbody.innerHTML = importPreviewData.map((g, idx) => {
+    const dataFmt = fmtDataIT(g.data);
+    const tempoDisp = g.frazioni ? calcTempoTri(g.frazioni) : (g.tempo || '—');
+    const badge = g.isDuplicate
+      ? '<span class="preview-badge-dup">DUPLICATO</span>'
+      : '<span class="preview-badge-new">NUOVA</span>';
+    return `<tr class="${g.isDuplicate ? 'preview-dup' : ''}">
+      <td><input type="checkbox" ${g.selected?'checked':''} ${g.isDuplicate?'disabled':''} onchange="importPreviewData[${idx}].selected=this.checked;updateImportCount()"></td>
+      <td>${sportIcon(g.sport)} ${sportLabel(g.sport)}</td>
+      <td style="font-weight:600;color:var(--text);">${g.nome}</td>
+      <td>${dataFmt}</td>
+      <td>${g.luogo||'—'}</td>
+      <td>${g.regione||'—'}</td>
+      <td>${g.distanza} km</td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-size:14px;">${tempoDisp}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateImportCount() {
+  const n = importPreviewData.filter(g => g.selected && !g.isDuplicate).length;
+  const btn = document.getElementById('import-confirm-btn');
+  btn.textContent = `Importa ${n} gar${n===1?'a':'e'}`;
+  btn.style.display = n > 0 ? 'block' : 'none';
+}
+
+function toggleAllImport(checked) {
+  importPreviewData.forEach((g, idx) => {
+    if (!g.isDuplicate) {
+      g.selected = checked;
+      const checkboxes = document.querySelectorAll('#import-table-body input[type=checkbox]');
+      if (checkboxes[idx]) checkboxes[idx].checked = checked;
+    }
+  });
+  updateImportCount();
+}
+
+function confirmImport() {
+  const toImport = importPreviewData.filter(g => g.selected && !g.isDuplicate);
+  if (!toImport.length) return;
+  const uid = getUtenteId();
+  const gare = getGare();
+  toImport.forEach((g, i) => {
+    const gara = {
+      id: Date.now() + i,
+      utente_id: uid,
+      sport: g.sport, nome: g.nome, data: g.data, luogo: g.luogo,
+      regione: g.regione, distanza: g.distanza,
+      esito: g.esito || 'finisher', tempo: g.tempo, frazioni: g.frazioni,
+      risultato: g.risultato || '', pb: g.pb || false,
+      rating: {percorso:0,ristori:0,organizzazione:0,posizione:0,pulizia:0,colazione:0},
+      ratingHotel: {posizione:0,pulizia:0,colazione:0},
+      note: g.note || '', hotel: g.hotel || '', hotelTipo: g.hotelTipo || ''
+    };
+    gare.push(gara);
+  });
+  saveGare(gare);
+  closeImport();
+  showToast(`Importate ${toImport.length} gare!`);
+  renderHome();
+  if (currentPage === 'gare') renderGare('tutte');
+  if (currentPage === 'mappa') renderMappa();
+  if (currentPage === 'stats') renderStats();
+  // Sync massivo al foglio
+  if (uid) {
+    showSyncBadge('sync');
+    const payload = gare.slice(-toImport.length).map(g => ({ ...g, utente_id: uid }));
+    gsPost('importGare', payload).then(r => {
+      if (r) showToast(`✅ ${r.imported || toImport.length} gare sincronizzate sul foglio!`);
+      showSyncBadge('ok');
+    });
+  }
+}
+
+function downloadTemplate() {
+  const header = 'sport,nome,data,luogo,regione,distanza,tempo,esito,note,hotel,hotelTipo';
+  const ex1 = 'corsa,Maratona di Roma,2025-03-16,Roma,Lazio,42.2,3:25:00,finisher,Bellissima gara con ottima organizzazione,Hotel Nazionale,Hotel';
+  const ex2 = 'triathlon,Triathlon Olimpico Riccione,2025-06-01,Riccione,Emilia-Romagna,51.5,,finisher,Prima gara tri della stagione,,';
+  const ex3 = 'trail,Trail dei Monti Sibillini,2025-05-18,Visso,Marche,35,4:12:00,finisher,Dislivello impegnativo ma paesaggi magnifici,Agriturismo Il Cerro,Agriturismo';
+  const csv = [header, ex1, ex2, ex3].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'irun_template.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importCSV(file) { parseImportFile(file); }
+
+function openImport() { openImportModal(); }
+
+
+
+
+// ============ STATISTICHE ============
+
+let chartInstances = {};
+
+function destroyChart(id) {
+  if (chartInstances[id]) {
+    try { chartInstances[id].destroy(); } catch(e) {}
+    delete chartInstances[id];
+  }
+}
+function _destroyChart_orig(id) {
+  if (chartInstances[id]) {
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+}
+
+function timeToSecs(t) {
+  if (!t) return 0;
+  const p = t.replace(/:/g,'.').split('.');
+  if (p.length === 3) return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseInt(p[2]);
+  if (p.length === 2) return parseInt(p[0])*3600 + parseInt(p[1])*60;
+  return 0;
+}
+
+function secsToHMS(s) {
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function garaTempoSecs(g) {
+  if (g.frazioni) {
+    return ['nuoto','t1','bici','t2','corsa'].reduce((s,k) => s + timeToSecs(g.frazioni[k]||''), 0);
+  }
+  return timeToSecs(g.tempo || '');
+}
+
+function garaTempoDisplay(g) {
+  const s = garaTempoSecs(g);
+  return s > 0 ? secsToHMS(s) : '--:--';
+}
+
+const CHART_COLORS = {
+  accent: '#ff5722',
+  accent2: '#ff8a65',
+  blue: '#2196f3',
+  green: '#4caf50',
+  purple: '#9c27b0',
+  teal: '#009688',
+  grid: 'rgba(255,255,255,0.06)',
+  text: '#888888',
+};
+
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: { labels: { color: CHART_COLORS.text, font: { family: 'Barlow', size: 12 }, boxWidth: 12 } },
+    tooltip: {
+      backgroundColor: '#1a1a1a',
+      borderColor: '#333',
+      borderWidth: 1,
+      titleColor: '#f5f5f5',
+      bodyColor: '#aaa',
+      padding: 10,
+    }
+  },
+  scales: {
+    x: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text, font: { family: 'Barlow', size: 11 } } },
+    y: { grid: { color: CHART_COLORS.grid }, ticks: { color: CHART_COLORS.text, font: { family: 'Barlow', size: 11 } } }
+  }
+};
+
+function _OLD_renderStats_UNUSED() {
+  const gare = getGare();
+  if (!gare.length) return;
+
+  // ===== SUMMARY CARDS =====
+  const finisher = gare.filter(g => g.esito === 'finisher');
+  const kmTot = gare.reduce((s,g) => s+(g.distanza||0), 0);
+  const pb = gare.filter(g => g.pb).length;
+  const regioni = new Set(gare.map(g=>g.regione).filter(r=>r&&r!=='Estero')).size;
+
+  document.getElementById('stats-summary-cards').innerHTML = `
+    <div class="card"><div class="cl">Gare totali</div><div class="cv" style="color:var(--accent)">${gare.length}</div><div class="cs">${finisher.length} finisher · ${gare.length-finisher.length} DNF</div></div>
+    <div class="card"><div class="cl">Km gareggiati</div><div class="cv" style="color:var(--accent)">${Math.round(kmTot).toLocaleString('it')}</div><div class="cs">dal 2015 ad oggi</div></div>
+    <div class="card"><div class="cl">Personal Best</div><div class="cv" style="color:var(--accent)">${pb}</div><div class="cs">gare con PB segnato</div></div>
+    <div class="card"><div class="cl">Regioni coperte</div><div class="cv" style="color:var(--accent)">${regioni}</div><div class="cs">su 20 regioni italiane</div></div>
+  `;
+
+  // ===== GRAFICO MARATONE =====
+  const maratone = gare
+    .filter(g => g.sport === 'corsa' && Math.abs(g.distanza - 42.2) < 0.5 && g.tempo)
+    .sort((a,b) => a.data.localeCompare(b.data));
+
+  destroyChart('maratone');
+  if (maratone.length) {
+    const ctx1 = document.getElementById('chart-maratone').getContext('2d');
+    const labels = maratone.map(g => g.data.slice(0,7) + ' ' + g.luogo.split('-')[0]);
+    const data = maratone.map(g => Math.round(garaTempoSecs(g)/60 * 10) / 10);
+    const minVal = Math.min(...data) - 5;
+    const maxVal = Math.max(...data) + 5;
+    chartInstances['maratone'] = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Minuti',
+          data,
+          borderColor: CHART_COLORS.accent,
+          backgroundColor: 'rgba(255,87,34,0.1)',
+          borderWidth: 2.5,
+          pointBackgroundColor: maratone.map(g => g.pb ? '#ffd54f' : CHART_COLORS.accent),
+          pointRadius: maratone.map(g => g.pb ? 7 : 4),
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.3,
+        }]
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: {
+            ...CHART_DEFAULTS.scales.y,
+            min: minVal, max: maxVal,
+            ticks: {
+              ...CHART_DEFAULTS.scales.y.ticks,
+              callback: v => {
+                // Mostra solo tick ogni 5 minuti (300 secondi)
+                if (v % 300 !== 0) return '';
+                const h = Math.floor(v/3600);
+                const m = Math.floor((v%3600)/60);
+                return `${h}h${String(m).padStart(2,'0')}`;
+              }
+            }
+          }
+        },
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            ...CHART_DEFAULTS.plugins.tooltip,
+            callbacks: {
+              label: ctx => {
+                const g = maratone[ctx.dataIndex];
+                const pb = g.pb ? ' ★ PB' : '';
+                return `${secsToHMS(garaTempoSecs(g))}${pb}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ===== GRAFICO KM PER ANNO =====
+  const byYear = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    byYear[y] = (byYear[y]||0) + (g.distanza||0);
+  });
+  const years = Object.keys(byYear).sort();
+
+  // ===== KM PER ANNO — stacked per sport =====
+  const sportOrder = ['corsa','ultra','trail','triathlon','tri703','ironman','duathlon','bici','nuoto'];
+  const sportLabelsFull = { corsa:'Corsa', ultra:'Ultra', trail:'Trail', triathlon:'Triathlon Ol.', tri703:'70.3', ironman:'Ironman', duathlon:'Duathlon', bici:'Bici', nuoto:'Nuoto' };
+  const sportColorsFull = { corsa:'#ff5722', ultra:'#ff8a65', trail:'#4caf50', triathlon:'#2196f3', tri703:'#1565c0', ironman:'#0d47a1', duathlon:'#9c27b0', bici:'#ffc107', nuoto:'#009688' };
+
+  // Calcola km per anno per sport
+  const kmByYearSport = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    const s = g.sport;
+    if (!kmByYearSport[y]) kmByYearSport[y] = {};
+    kmByYearSport[y][s] = (kmByYearSport[y][s]||0) + (g.distanza||0);
+  });
+
+  // Trova sport presenti
+  const sportPresenti = [...new Set(gare.map(g=>g.sport))].sort((a,b) => sportOrder.indexOf(a)-sportOrder.indexOf(b));
+
+  const kmDatasets = sportPresenti.map(s => ({
+    label: sportLabelsFull[s]||s,
+    data: years.map(y => Math.round((kmByYearSport[y]||{})[s]||0)),
+    backgroundColor: sportColorsFull[s]||'#888',
+    borderColor: 'rgba(0,0,0,0.3)',
+    borderWidth: 0.5,
+    borderRadius: 2,
+    stack: 'km',
+  }));
+
+  destroyChart('km-anno');
+  const ctx2 = document.getElementById('chart-km-anno').getContext('2d');
+  chartInstances['km-anno'] = new Chart(ctx2, {
+    type: 'bar',
+    data: { labels: years, datasets: kmDatasets },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, stacked: true },
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          stacked: true,
+          ticks: {
+            ...CHART_DEFAULTS.scales.y.ticks,
+            callback: v => (v % 50 === 0) ? v.toLocaleString('it') : ''
+          }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: { labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:11}, boxWidth:12, padding:8 } },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} km` }
+        }
+      }
+    }
+  });
+
+  
+  // ===== GRAFICO SPORT =====
+  const sportCount = {};
+  gare.forEach(g => {
+    const sg = sportgruppo(g.sport);
+    sportCount[sg] = (sportCount[sg]||0) + 1;
+  });
+  const sportLabels = { corsa:'Corsa', triathlon:'Triathlon', ultra:'Ultra', trail:'Trail', bici:'Bici', nuoto:'Nuoto', duathlon:'Duathlon' };
+  const sportColors = ['#ff5722','#2196f3','#ff8a65','#4caf50','#ffc107','#009688','#9c27b0'];
+
+  destroyChart('sport');
+  const ctx3 = document.getElementById('chart-sport').getContext('2d');
+  const sportKeys = Object.keys(sportCount).sort((a,b) => sportCount[b]-sportCount[a]);
+  chartInstances['sport'] = new Chart(ctx3, {
+    type: 'doughnut',
+    data: {
+      labels: sportKeys.map(k => sportLabels[k]||k),
+      datasets: [{
+        data: sportKeys.map(k => sportCount[k]),
+        backgroundColor: sportColors.slice(0, sportKeys.length),
+        borderColor: '#111',
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position:'right', labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:12}, boxWidth:14, padding:10 } },
+        tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} gare` } }
+      }
+    }
+  });
+
+  // ===== GRAFICO GARE PER ANNO =====
+  const garePerAnno = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    garePerAnno[y] = (garePerAnno[y]||0) + 1;
+  });
+
+  destroyChart('gare-anno');
+  const ctx4 = document.getElementById('chart-gare-anno').getContext('2d');
+
+  // Calcola gare per anno per sport
+  const gareByYearSport = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    const s = g.sport;
+    if (!gareByYearSport[y]) gareByYearSport[y] = {};
+    gareByYearSport[y][s] = (gareByYearSport[y][s]||0) + 1;
+  });
+  const yearsGare = Object.keys(gareByYearSport).sort();
+
+  const gareDatasets = sportPresenti.map(s => ({
+    label: sportLabelsFull[s]||s,
+    data: yearsGare.map(y => (gareByYearSport[y]||{})[s]||0),
+    backgroundColor: sportColorsFull[s]||'#888',
+    borderColor: 'rgba(0,0,0,0.3)',
+    borderWidth: 0.5,
+    borderRadius: 2,
+    stack: 'gare',
+  }));
+
+  chartInstances['gare-anno'] = new Chart(ctx4, {
+    type: 'bar',
+    data: { labels: yearsGare, datasets: gareDatasets },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, stacked: true },
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          stacked: true,
+          ticks: {
+            ...CHART_DEFAULTS.scales.y.ticks,
+            stepSize: 1,
+            callback: v => Number.isInteger(v) ? v : ''
+          }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: { labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:11}, boxWidth:12, padding:8 } },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: {
+            label: ctx => ctx.raw > 0 ? ` ${ctx.dataset.label}: ${ctx.raw} gar${ctx.raw===1?'a':'e'}` : null,
+            filter: item => item.raw > 0
+          }
+        }
+      }
+    }
+  });
+
+  // ===== POPOLA SELECTOR COMPARATORE =====
+  populateComparator(gare);
+}
+
+function populateComparator(gare) {
+  const byNome = {};
+  gare.forEach(g => {
+    if (!byNome[g.nome]) byNome[g.nome] = [];
+    byNome[g.nome].push(g);
+  });
+
+  const ripetute = Object.entries(byNome)
+    .filter(([,gs]) => gs.length > 1)
+    .sort((a,b) => b[1].length - a[1].length);
+
+  const sel = document.getElementById('comp-selector');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Seleziona una gara ripetuta —</option>';
+  ripetute.forEach(([nome, gs]) => {
+    const opt = document.createElement('option');
+    opt.value = nome;
+    opt.textContent = `${nome} (${gs.length}x)`;
+    sel.appendChild(opt);
+  });
+  if (currentVal) sel.value = currentVal;
+}
+
+function renderComparator() {
+  const nome = document.getElementById('comp-selector').value;
+  const content = document.getElementById('comp-content');
+  const empty = document.getElementById('comp-empty');
+
+  if (!nome) {
+    content.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  const gare = getGare().filter(g => g.nome === nome).sort((a,b) => a.data.localeCompare(b.data));
+  if (!gare.length) return;
+
+  content.style.display = 'block';
+  empty.style.display = 'none';
+
+  const isTri = gare[0].frazioni !== null;
+  const labels = gare.map(g => g.data.slice(0,4));
+  const tempi = gare.map(g => garaTempoSecs(g));
+  const minT = Math.min(...tempi.filter(t=>t>0));
+  const maxT = Math.max(...tempi.filter(t=>t>0));
+  const pad = (maxT - minT) * 0.15 || 300;
+
+  // Grafico comparatore
+  destroyChart('comp');
+  const ctx = document.getElementById('chart-comp').getContext('2d');
+  chartInstances['comp'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Tempo totale',
+        data: tempi,
+        backgroundColor: gare.map(g => g.pb ? 'rgba(255,213,79,0.7)' : 'rgba(255,87,34,0.6)'),
+        borderColor: gare.map(g => g.pb ? '#ffd54f' : CHART_COLORS.accent),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        ...CHART_DEFAULTS.scales,
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          min: Math.max(0, minT - pad),
+          max: maxT + pad,
+          ticks: {
+            ...CHART_DEFAULTS.scales.y.ticks,
+            callback: v => secsToHMS(v)
+          }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: { display: false },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: {
+            title: ctx => gare[ctx[0].dataIndex].luogo + ' ' + gare[ctx[0].dataIndex].data.slice(0,4),
+            label: ctx => ' Tempo: ' + secsToHMS(ctx.raw),
+            afterLabel: ctx => {
+              const g = gare[ctx.dataIndex];
+              const prev = gare[ctx.dataIndex - 1];
+              if (!prev) return '';
+              const diff = garaTempoSecs(g) - garaTempoSecs(prev);
+              const sign = diff > 0 ? '+' : '';
+              return ` vs anno prec.: ${sign}${secsToHMS(Math.abs(diff))}`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Tabella dettaglio
+  const isTriFull = gare.some(g => g.frazioni);
+  let tableHtml = `
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2);">${nome}</div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;">
+      <tr>
+        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Anno</th>
+        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Tempo</th>
+        ${isTriFull ? '<th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Nuoto</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Bici</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Corsa</th>' : ''}
+        <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Delta</th>
+        <th style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);">Badge</th>
+      </tr>`;
+
+  gare.forEach((g, i) => {
+    const tempo = garaTempoDisplay(g);
+    const prev = gare[i-1];
+    let delta = '';
+    if (prev) {
+      const diff = garaTempoSecs(g) - garaTempoSecs(prev);
+      const sign = diff > 0 ? '+' : '';
+      const color = diff < 0 ? '#4caf50' : diff > 0 ? '#f44336' : '#888';
+      delta = `<span style="color:${color};font-weight:600;">${sign}${secsToHMS(Math.abs(diff))}</span>`;
+    }
+    const pbBadge = g.pb ? '<span style="background:rgba(255,213,79,0.2);color:#ffd54f;border-radius:3px;padding:1px 5px;font-size:10px;">★ PB</span>' : '';
+    const risultato = g.risultato && g.risultato !== 'FINISHER' ? `<span style="background:rgba(255,255,255,0.05);color:var(--text3);border-radius:3px;padding:1px 5px;font-size:10px;">${g.risultato}</span>` : '';
+
+    const triFrazioni = isTriFull && g.frazioni
+      ? `<td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);">${g.frazioni.nuoto||'-'}</td>
+         <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);">${g.frazioni.bici||'-'}</td>
+         <td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);">${g.frazioni.corsa||'-'}</td>`
+      : isTriFull ? '<td colspan="3" style="padding:6px 8px;border-bottom:1px solid var(--border);"></td>' : '';
+
+    tableHtml += `<tr style="${g.pb ? 'background:rgba(255,213,79,0.05);' : i%2===0 ? '' : 'background:rgba(255,255,255,0.02);'}">
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;">${g.data.slice(0,4)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text);">${tempo}</td>
+      ${triFrazioni}
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${delta}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${pbBadge}${risultato}</td>
+    </tr>`;
+  });
+  tableHtml += '</table>';
+
+  // Migliore e peggiore
+  const validi = gare.filter(g => garaTempoSecs(g) > 0);
+  if (validi.length > 1) {
+    const best = validi.reduce((a,b) => garaTempoSecs(a) < garaTempoSecs(b) ? a : b);
+    const worst = validi.reduce((a,b) => garaTempoSecs(a) > garaTempoSecs(b) ? a : b);
+    const totDiff = garaTempoSecs(validi[validi.length-1]) - garaTempoSecs(validi[0]);
+    const sign = totDiff > 0 ? '+' : '';
+    const color = totDiff < 0 ? '#4caf50' : '#f44336';
+    tableHtml += `
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#81c784;font-weight:600;margin-bottom:2px;">MIGLIORE</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;">${garaTempoDisplay(best)}</div>
+          <div style="font-size:11px;color:var(--text3);">${best.data.slice(0,4)}</div>
+        </div>
+        <div style="background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:#ef9a9a;font-weight:600;margin-bottom:2px;">PEGGIORE</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;">${garaTempoDisplay(worst)}</div>
+          <div style="font-size:11px;color:var(--text3);">${worst.data.slice(0,4)}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px;">PRIMA→ULTIMA</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:${color};">${sign}${secsToHMS(Math.abs(totDiff))}</div>
+          <div style="font-size:11px;color:var(--text3);">${validi[0].data.slice(0,4)} → ${validi[validi.length-1].data.slice(0,4)}</div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('comp-table').innerHTML = tableHtml;
+}
+
+
+// ============ INIT ============
+const GARE_PRECARICATE = [];  // dati dal foglio Google
+
+// ============ LOGIN ============
+function openLoginModal() {
+  const uid = getUtenteId();
+  switchAuthTab('login');
+  document.getElementById('login-uid').value = uid || '';
+  document.getElementById('login-pwd').value = '';
+  document.getElementById('login-title').innerHTML = uid
+    ? 'Account <span>I-Run</span>'
+    : 'Accedi a <span>I-Run</span>';
+  const cancelBtn = document.getElementById('login-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = uid ? 'block' : 'none';
+  const info = document.getElementById('login-info');
+  if (info) { info.style.display = 'none'; info.textContent = ''; }
+  document.getElementById('login-overlay').classList.add('open');
+}
+
+function closeLoginModal() {
+  document.getElementById('login-overlay').classList.remove('open');
+}
+
+function svuotaCacheConfig() {
+  localStorage.removeItem('irun_config');
+  _configLoaded = false;
+  _config = { sport:[], distanze:[], nazioni:[], regioni:[] };
+}
+
+function switchAuthTab(tab) {
+  const loginF = document.getElementById('auth-login-form');
+  const regF   = document.getElementById('auth-reg-form');
+  const tLogin = document.getElementById('tab-login');
+  const tReg   = document.getElementById('tab-reg');
+  if (!loginF) return;
+  if (tab === 'login') {
+    loginF.style.display = 'block'; regF.style.display = 'none';
+    tLogin.style.borderBottomColor = 'var(--accent)'; tLogin.style.color = 'var(--accent)'; tLogin.style.fontWeight = '600';
+    tReg.style.borderBottomColor   = 'transparent';   tReg.style.color   = 'var(--text3)';  tReg.style.fontWeight   = '400';
+  } else {
+    loginF.style.display = 'none'; regF.style.display = 'block';
+    tReg.style.borderBottomColor   = 'var(--accent)'; tReg.style.color   = 'var(--accent)'; tReg.style.fontWeight   = '600';
+    tLogin.style.borderBottomColor = 'transparent';   tLogin.style.color = 'var(--text3)';  tLogin.style.fontWeight = '400';
+    // Popola sport nel form registrazione
+    popolaSelectConfig();
+  }
+}
+
+async function confermaLogin() {
+  const uid = document.getElementById('login-uid').value.trim();
+  const pwd = document.getElementById('login-pwd').value;
+  if (!uid) { alert('Inserisci nome utente o email'); return; }
+
+  const info = document.getElementById('login-info');
+  info.textContent = '⟳ Verifica credenziali...';
+  info.style.display = 'block';
+  info.style.background = 'rgba(255,193,7,0.08)';
+  info.style.border = '1px solid rgba(255,193,7,0.25)';
+  info.style.color = 'var(--text2)';
+
+  // Tenta login sul foglio
+  const res = await gsPost('loginUtente', { utente_id: uid, password: pwd });
+  if (res && res.ok) {
+    const profilo = res;
+    setUtenteId(profilo.utente_id);
+    localStorage.setItem('irun_profilo_remoto', JSON.stringify(profilo));
+    renderNavUser();
+    info.textContent = `✓ Benvenuto ${profilo.nome || profilo.utente_id}!`;
+    info.style.background = 'rgba(76,175,80,0.08)';
+    info.style.border = '1px solid rgba(76,175,80,0.25)';
+    info.style.color = '#81c784';
+    await syncFromSheet();
+    setTimeout(() => {
+      closeLoginModal();
+      renderHome(); renderProfilo();
+      if (currentPage === 'gare')  renderGare('tutte');
+      if (currentPage === 'mappa') renderMappa();
+      if (currentPage === 'stats') renderStats();
+    }, 900);
+  } else if (res && res.error) {
+    info.textContent = '✗ ' + res.error;
+    info.style.background = 'rgba(244,67,54,0.08)';
+    info.style.border = '1px solid rgba(244,67,54,0.25)';
+    info.style.color = '#ef9a9a';
+  } else {
+    // Fallback offline: accesso senza password se foglio non raggiungibile
+    setUtenteId(uid);
+    renderNavUser();
+    info.textContent = '⚠ Foglio non raggiungibile. Accesso offline.';
+    info.style.color = 'var(--accent2)';
+    await syncFromSheet();
+    setTimeout(() => { closeLoginModal(); renderHome(); }, 1200);
+  }
+}
+
+async function confermaRegistrazione() {
+  const nome    = document.getElementById('reg-nome').value.trim();
+  const cognome = document.getElementById('reg-cognome').value.trim();
+  const email   = document.getElementById('reg-email').value.trim();
+  const pwd     = document.getElementById('reg-pwd').value;
+  const pwd2    = document.getElementById('reg-pwd2').value;
+  const info    = document.getElementById('reg-info');
+
+  if (!nome)    { mostraInfoReg('Inserisci il nome', 'err', info); return; }
+  if (!cognome) { mostraInfoReg('Inserisci il cognome', 'err', info); return; }
+  if (!email)   { mostraInfoReg('Inserisci la email', 'err', info); return; }
+  if (!pwd)     { mostraInfoReg('Inserisci una password', 'err', info); return; }
+  if (pwd.length < 6) { mostraInfoReg('Password troppo corta (min. 6 caratteri)', 'err', info); return; }
+  if (pwd !== pwd2) { mostraInfoReg('Le password non corrispondono', 'err', info); return; }
+
+  const uid = (nome + cognome).toLowerCase().replace(/\s/g,'') + '_' + Date.now().toString().slice(-4);
+  const profilo = document.querySelector('input[name="reg-profilo"]:checked');
+  const utente = {
+    utente_id:       uid,
+    nome:            nome,
+    cognome:         cognome,
+    email:           email,
+    nascita:         document.getElementById('reg-nascita').value || '',
+    sesso:           document.getElementById('reg-sesso').value || '',
+    peso:            document.getElementById('reg-peso').value || '',
+    altezza:         document.getElementById('reg-altezza').value || '',
+    sport_praticati: [document.getElementById('reg-sport').value].filter(Boolean),
+    profilo_pubblico: profilo ? profilo.value === 'pubblico' : true,
+    password:        pwd,
+    foto_url:        '',
+  };
+
+  mostraInfoReg('⟳ Creazione account...', 'loading', info);
+  const res = await gsPost('registraUtente', utente);
+  if (res && res.created) {
+    mostraInfoReg('✓ Account creato! Accedi ora.', 'ok', info);
+    setTimeout(() => {
+      switchAuthTab('login');
+      document.getElementById('login-uid').value = uid;
+    }, 1200);
+  } else if (res && res.error) {
+    mostraInfoReg('✗ ' + res.error, 'err', info);
+  } else {
+    mostraInfoReg('✗ Errore nella registrazione. Riprova.', 'err', info);
+  }
+}
+
+function mostraInfoReg(msg, tipo, el) {
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (tipo === 'err') {
+    el.style.background = 'rgba(244,67,54,0.08)'; el.style.border = '1px solid rgba(244,67,54,0.25)'; el.style.color = '#ef9a9a';
+  } else if (tipo === 'ok') {
+    el.style.background = 'rgba(76,175,80,0.08)'; el.style.border = '1px solid rgba(76,175,80,0.25)'; el.style.color = '#81c784';
+  } else {
+    el.style.background = 'rgba(255,193,7,0.08)'; el.style.border = '1px solid rgba(255,193,7,0.25)'; el.style.color = 'var(--text2)';
+  }
+}
+
+function renderNavUser() {
+  const uid = getUtenteId();
+  const initials = uid ? uid.slice(0,2).toUpperCase() : '?';
+  const el = document.getElementById('nav-initials');
+  if (el) el.textContent = initials;
+  const avatar = document.getElementById('nav-avatar');
+  if (avatar) avatar.style.background = uid
+    ? 'linear-gradient(135deg,var(--accent),var(--accent2))'
+    : 'var(--bg4)';
+}
+
+// ============ INIT ============
+async function init() {
+  renderNavUser();
+  // Carica configurazione dal foglio (sport, distanze, regioni) — AWAIT obbligatorio
+  await caricaConfigurazione();
+  console.log('Config pronta:', getConfig());
+
+  const uid = getUtenteId();
+  if (!uid) {
+    // Primo accesso: mostra subito il login
+    if (!getGare().length) {
+      saveGare(GARE_PRECARICATE);
+    }
+    if (!getProgramma().length) {
+      saveProgramma([{
+        id: 1, sport: 'corsa', utente_id: '',
+        nome: 'Passatore di Romagna 100km',
+        data: '2026-05-23', luogo: 'Firenze → Faenza',
+        regione: 'Emilia-Romagna', distanza: 100,
+        note: "Obiettivo: 10h45' — prima ultramaratona da 100km"
+      }]);
+    }
+    renderHome();
+    renderProgramma();
+    // Mostra login dopo un attimo
+    setTimeout(openLoginModal, 800);
+  } else {
+    // Utente noto: carica cache locale subito, poi sync in background
+    if (!getGare().length) saveGare(GARE_PRECARICATE);
+    renderHome();
+    renderProgramma();
+    syncFromSheet().then(() => {
+      renderHome();
+      if (currentPage === 'gare')    renderGare('tutte');
+      if (currentPage === 'mappa')   renderMappa();
+      if (currentPage === 'profilo') renderProfilo();
+      if (currentPage === 'stats')   renderStats();
+    });
+  }
+}
+
+init();
+</script>
+
+<!-- D3 + Mappa Italia -->
+<script>
+// Mappa SVG pura — nessuna dipendenza esterna
+
+function regioneColorSVG(n) {
+  if (n >= 10) return '#ff5722';
+  if (n >= 5)  return '#ff8a65';
+  if (n >= 2)  return '#ffccbc';
+  if (n >= 1)  return 'rgba(255,87,34,0.4)';
+  return '#1c1c1c';
+}
+
+function updateMapColors() {
+  const gare = getGare();
+  const regioniMap = {};
+  gare.forEach(g => {
+    if (g.regione && g.regione !== 'Estero') {
+      if (!regioniMap[g.regione]) regioniMap[g.regione] = [];
+      regioniMap[g.regione].push(g);
+    }
+  });
+
+  const tooltip = document.getElementById('map-tooltip');
+
+  document.querySelectorAll('#italy-svg .reg-d3').forEach(path => {
+    const regName = path.dataset.region;
+    const gs = regioniMap[regName] || [];
+    const color = regioneColorSVG(gs.length);
+
+    path.style.fill = color;
+    path.style.stroke = '#0a0a0a';
+    path.style.strokeWidth = '0.8';
+    path.style.cursor = gs.length ? 'pointer' : 'default';
+    path.style.transition = 'fill 0.2s, opacity 0.15s';
+
+    path.onmouseenter = function(e) {
+      if (gs.length > 0) {
+        path.style.filter = 'url(#reg-glow)';
+        path.style.opacity = '0.85';
+      }
+      if (!tooltip) return;
+      if (!gs.length) {
+        tooltip.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${regName}</div><div style="color:var(--text3);font-size:12px;">Nessuna gara ancora</div>`;
+      } else {
+        const kmR = gs.reduce((s,g) => s+(g.distanza||0), 0);
+        const list = gs.slice(0,5).map(g => {
+          const t = g.frazioni ? calcTempoTri(g.frazioni) : (g.tempo||'');
+          return `<div style="font-size:11px;color:var(--text3);margin-top:3px;">${g.data.slice(0,4)} · ${g.nome}${t?' · <span style=color:#ff8a65>'+t+'</span>':''}</div>`;
+        }).join('');
+        const more = gs.length > 5 ? `<div style="font-size:11px;color:var(--accent);margin-top:3px;">+${gs.length-5} altre gare</div>` : '';
+        tooltip.innerHTML = `
+          <div style="font-weight:600;font-size:14px;margin-bottom:5px;">${regName}</div>
+          <div style="color:var(--accent);font-weight:600;margin-bottom:4px;">${gs.length} gar${gs.length===1?'a':'e'} · ${Math.round(kmR)} km</div>
+          ${list}${more}`;
+      }
+      const box = document.getElementById('italy-map-container').getBoundingClientRect();
+      let tx = e.clientX - box.left + 14;
+      let ty = e.clientY - box.top + 14;
+      if (tx + 230 > box.width) tx -= 245;
+      if (ty + 170 > box.height) ty -= 175;
+      tooltip.style.left = Math.max(0,tx) + 'px';
+      tooltip.style.top = Math.max(0,ty) + 'px';
+      tooltip.style.opacity = '1';
+    };
+
+    path.onmouseleave = function() {
+      path.style.filter = '';
+      path.style.opacity = '1';
+      if (tooltip) tooltip.style.opacity = '0';
+    };
+  });
+}
+
+function loadMap() {
+  // SVG già nel DOM — aggiorna solo i colori
+  updateMapColors();
+}
+</script>
+</body>
+</html>
