@@ -997,9 +997,25 @@
         </div>
       </div>
 
+      <!-- EVOLUZIONE TEMPO -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">Evoluzione tempo</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:16px;">Seleziona un tipo di gara per vedere l'andamento del tempo nel corso degli anni</div>
+        <select class="form-select" id="evoluzione-selector" style="max-width:320px;margin-bottom:16px;" onchange="renderEvoluzioneChart(calcolaPBAutomatici(getGare()), this.value)">
+          <option value="">— Seleziona tipo di gara —</option>
+        </select>
+        <div id="evoluzione-chart-wrap" style="display:none;">
+          <canvas id="chart-evoluzione" height="160"></canvas>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;">I pallini gialli ★ indicano Personal Best</div>
+        </div>
+        <div id="evoluzione-placeholder" style="color:var(--text3);font-size:13px;padding:20px 0;">
+          Seleziona un tipo di gara con almeno 2 partecipazioni per vedere il grafico.
+        </div>
+      </div>
+
       <!-- COMPARATORE -->
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">Comparatore gare</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;margin-bottom:4px;">Confronto gare ripetute</div>
         <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">Seleziona una gara per confrontare le edizioni nel tempo</div>
 
         <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
@@ -2088,21 +2104,22 @@ function selectSportP(btn) {
   selectedSportP = btn.dataset.sport;
 }
 function salvaGaraProgramma() {
-  const nome = document.getElementById('p-nome').value.trim();
-  if (!nome) { alert('Inserisci il nome della gara'); return; }
+  const nome = document.getElementById('p-nome') ? document.getElementById('p-nome').value.trim() : '';
   const dataVal = document.getElementById('p-data').value;
   if (dataVal && dataVal <= new Date().toISOString().slice(0,10)) {
     alert('⚠️ La data deve essere successiva a oggi. Per le gare passate usa "Aggiungi gara".');
     return;
   }
-  const sportP = (document.getElementById('p-sport') || {}).value || selectedSportP;
-  const tipoGaraP = (document.getElementById('p-tipo-gara') || {}).value || nome;
+  const sportP    = (document.getElementById('p-sport')     || {}).value || selectedSportP || '';
+  const tipoGaraP = (document.getElementById('p-tipo-gara') || {}).value || '';
+  const nomeGara  = tipoGaraP || nome || '';
+  if (!nomeGara && !sportP) { alert('Seleziona almeno lo sport o il tipo di gara'); return; }
   const gara = {
     id: Date.now(),
     utente_id: getUtenteId() || 'locale',
     sport: sportP,
-    tipo_gara: tipoGaraP,
-    nome: tipoGaraP || nome,
+    tipo_gara: nomeGara,
+    nome: nomeGara,
     data: document.getElementById('p-data').value,
     luogo: document.getElementById('p-luogo').value,
     regione: document.getElementById('p-regione').value,
@@ -2477,10 +2494,11 @@ function renderStats() {
   // ── Per Anno ──
   const perAnno = {};
   gare.forEach(g => {
-    const y = (g.data||'').slice(0,4); if (!y) return;
-    if (!perAnno[y]) perAnno[y] = { tot:0, km:0, fin:0 };
-    perAnno[y].tot++; perAnno[y].km += g.distanza||0;
+    const y = (g.data||'').slice(0,4); if (!y || y.length < 4) return;
+    if (!perAnno[y]) perAnno[y] = { tot:0, fin:0, dnf:0 };
+    perAnno[y].tot++;
     if (g.esito==='finisher') perAnno[y].fin++;
+    else perAnno[y].dnf++;
   });
   destroyChart('anno');
   const anniSorted = Object.keys(perAnno).sort();
@@ -2491,11 +2509,14 @@ function renderStats() {
       data: {
         labels: anniSorted,
         datasets: [
-          { label: 'Gare', data: anniSorted.map(y=>perAnno[y].tot), backgroundColor: CHART_COLORS.accent, borderRadius: 4 },
-          { label: 'Km (÷10)', data: anniSorted.map(y=>Math.round(perAnno[y].km/10)), backgroundColor: CHART_COLORS.blue, borderRadius: 4 },
+          { label: 'Finisher', data: anniSorted.map(y=>perAnno[y].fin), backgroundColor: CHART_COLORS.accent, borderRadius: 4 },
+          { label: 'DNF',      data: anniSorted.map(y=>perAnno[y].dnf), backgroundColor: 'rgba(244,67,54,0.6)', borderRadius: 4 },
         ]
       },
-      options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, labels: { color: CHART_COLORS.text } } } }
+      options: { ...CHART_DEFAULTS,
+        scales: { ...CHART_DEFAULTS.scales, x: { ...CHART_DEFAULTS.scales.x, stacked: true }, y: { ...CHART_DEFAULTS.scales.y, stacked: true } },
+        plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, labels: { color: CHART_COLORS.text, font: { size: 12 } } } }
+      }
     });
   }
 
@@ -2544,8 +2565,10 @@ function renderStats() {
     });
   }
 
-  // ── Evoluzione Tempo (grafico dinamico) ──
+  // ── Evoluzione Tempo ──
   renderEvoluzioneSelector(gare);
+  // ── Comparatore ──
+  renderComparator();
 }
 
 function renderEvoluzioneSelector(gare) {
@@ -2642,7 +2665,7 @@ function renderMappa() {
   if (statsEl) statsEl.textContent = nRegioni + ' regioni · ' + Math.round(kmTot).toLocaleString('it') + ' km totali';
 
   // Colora tutte le regioni SVG
-  document.querySelectorAll('#italy-map .reg').forEach(path => {
+  document.querySelectorAll('#italy-map-container .reg-d3').forEach(path => {
     const regName = path.dataset.region || path.id.replace('reg-', '');
     const gs = regioniMap[regName] || [];
     const color = regioneColor(gs.length);
