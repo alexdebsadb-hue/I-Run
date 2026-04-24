@@ -631,8 +631,8 @@
     <!-- FORM LOGIN -->
     <div id="auth-login-form">
       <div class="form-group">
-        <label class="form-label">Nome utente o Email</label>
-        <input class="form-input" id="login-uid" placeholder="es. alessandro o ale@email.com" />
+        <label class="form-label">Email <span style="color:var(--accent)">*</span></label>
+        <input class="form-input" id="login-uid" type="email" placeholder="la tua email (es. mario@gmail.com)" autocomplete="email" />
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Password</label>
@@ -667,7 +667,7 @@
           <input class="form-input" id="reg-nascita" type="date" />
         </div>
       </div>
-      <div class="form-row triple">
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">Sesso</label>
           <select class="form-select" id="reg-sesso">
@@ -681,17 +681,21 @@
           <label class="form-label">Peso (kg)</label>
           <input class="form-input" id="reg-peso" type="number" placeholder="70" />
         </div>
-        <div class="form-group">
-          <label class="form-label">Altezza (cm)</label>
-          <input class="form-input" id="reg-altezza" type="number" placeholder="175" />
-        </div>
+  
       </div>
       <div class="form-group">
         <label class="form-label">Sport preferito</label>
-        <select class="form-select" id="reg-sport">
-          <option value="">Seleziona...</option>
-          <!-- Popolato dinamicamente da popolaSelectConfig() -->
-        </select>
+        <input class="form-input" id="reg-sport" placeholder="es. Corsa, Triathlon, Trail..." list="reg-sport-list" autocomplete="off" />
+        <datalist id="reg-sport-list">
+          <option value="Corsa">
+          <option value="Triathlon">
+          <option value="Trail">
+          <option value="Ultra">
+          <option value="Bici">
+          <option value="Nuoto">
+          <option value="Duathlon">
+          <option value="Ironman">
+        </datalist>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1445,7 +1449,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbzRAVEM3yD1TZsjs_hVsM8rB6Jsp3Qplxqo7lR7NVXoWcsw_iugiSNGQMTulC9RgVw5/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -1745,15 +1749,10 @@ function popolaSelectConfig() {
       const o = document.createElement('option'); o.value = r; o.textContent = r; pReg.appendChild(o);
     });
   }
-  // Sport nel form registrazione
-  const rSport = document.getElementById('reg-sport');
-  if (rSport) {
-    const cur = rSport.value;
-    rSport.innerHTML = '<option value="">Seleziona...</option>';
-    (c.sport || []).forEach(s => {
-      const o = document.createElement('option'); o.value = s; o.textContent = s; rSport.appendChild(o);
-    });
-    if (cur) rSport.value = cur;
+  // Aggiorna datalist sport nel form registrazione
+  const rSportList = document.getElementById('reg-sport-list');
+  if (rSportList && c.sport && c.sport.length) {
+    rSportList.innerHTML = (c.sport || []).map(s => `<option value="${s}">`).join('');
   }
 }
 
@@ -3917,10 +3916,15 @@ function renderComparator() {
 const GARE_PRECARICATE = [];  // dati dal foglio Google
 
 // ============ LOGIN ============
-function openLoginModal() {
+function openLoginModal(prefilEmail) {
   const uid = getUtenteId();
   switchAuthTab('login');
-  document.getElementById('login-uid').value = uid || '';
+  // Non svuotare se è già stata pre-compilata (es. dopo registrazione)
+  if (prefilEmail) {
+    document.getElementById('login-uid').value = prefilEmail;
+  } else if (!document.getElementById('login-uid').value) {
+    document.getElementById('login-uid').value = '';
+  }
   document.getElementById('login-pwd').value = '';
   document.getElementById('login-title').innerHTML = uid
     ? 'Account <span>I-Run</span>'
@@ -3962,9 +3966,9 @@ function switchAuthTab(tab) {
 }
 
 async function confermaLogin() {
-  const uid = document.getElementById('login-uid').value.trim();
-  const pwd = document.getElementById('login-pwd').value;
-  if (!uid) { alert('Inserisci nome utente o email'); return; }
+  const email = document.getElementById('login-uid').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  if (!email) { alert('Inserisci la tua email'); return; }
 
   const info = document.getElementById('login-info');
   info.textContent = '⟳ Verifica credenziali...';
@@ -3973,11 +3977,11 @@ async function confermaLogin() {
   info.style.border = '1px solid rgba(255,193,7,0.25)';
   info.style.color = 'var(--text2)';
 
-  // Tenta login sul foglio
-  const res = await gsPost('loginUtente', { utente_id: uid, password: pwd });
+  // Login con email come identificativo primario
+  const res = await gsPost('loginUtente', { email: email, password: pwd });
   if (res && res.ok) {
     const profilo = res;
-    setUtenteId(profilo.utente_id);
+    setUtenteId(profilo.utente_id);  // utente_id viene dal foglio, non dall'input
     localStorage.setItem('irun_profilo_remoto', JSON.stringify(profilo));
     renderNavUser();
     info.textContent = `✓ Benvenuto ${profilo.nome || profilo.utente_id}!`;
@@ -3999,7 +4003,7 @@ async function confermaLogin() {
     info.style.color = '#ef9a9a';
   } else {
     // Fallback offline: accesso senza password se foglio non raggiungibile
-    setUtenteId(uid);
+    setUtenteId(email);
     renderNavUser();
     info.textContent = '⚠ Foglio non raggiungibile. Accesso offline.';
     info.style.color = 'var(--accent2)';
@@ -4025,29 +4029,39 @@ async function confermaRegistrazione() {
 
   const uid = (nome + cognome).toLowerCase().replace(/\s/g,'') + '_' + Date.now().toString().slice(-4);
   const profilo = document.querySelector('input[name="reg-profilo"]:checked');
+  const sportPref   = (document.getElementById('reg-sport').value   || '').trim();
+  const dataNascita = (document.getElementById('reg-nascita').value || '').trim();
+  const sessoVal    = (document.getElementById('reg-sesso').value   || '').trim();
+  const pesoVal     = (document.getElementById('reg-peso').value    || '').trim();
+  const profiloVal  = profilo ? profilo.value : 'pubblico';
+
   const utente = {
-    utente_id:       uid,
-    nome:            nome,
-    cognome:         cognome,
-    email:           email,
-    nascita:         document.getElementById('reg-nascita').value || '',
-    sesso:           document.getElementById('reg-sesso').value || '',
-    peso:            document.getElementById('reg-peso').value || '',
-    altezza:         document.getElementById('reg-altezza').value || '',
-    sport_praticati: [document.getElementById('reg-sport').value].filter(Boolean),
-    profilo_pubblico: profilo ? profilo.value === 'pubblico' : true,
-    password:        pwd,
-    foto_url:        '',
+    utente_id:        uid,
+    nome:             nome,
+    cognome:          cognome,
+    email:            email,
+    data_nascita:     dataNascita,
+    sesso:            sessoVal,
+    peso:             pesoVal,
+    sport_preferito:  sportPref,
+    profilo_pubblico: profiloVal === 'pubblico',
+    profilo:          profiloVal === 'pubblico' ? 'PUBBLICO' : 'PRIVATO',
+    password:         pwd,
   };
+  console.log('Registrazione utente:', JSON.stringify({...utente, password:'[hidden]'}));
 
   mostraInfoReg('⟳ Creazione account...', 'loading', info);
   const res = await gsPost('registraUtente', utente);
   if (res && res.created) {
-    mostraInfoReg('✓ Account creato! Accedi ora.', 'ok', info);
+    mostraInfoReg('✓ Account creato! Ora accedi con la tua email.', 'ok', info);
     setTimeout(() => {
+      // Passa email direttamente — NON chiamare openLoginModal che svuoterebbe il campo
       switchAuthTab('login');
-      document.getElementById('login-uid').value = uid;
-    }, 1200);
+      document.getElementById('login-uid').value = email;
+      document.getElementById('login-pwd').value = '';
+      // Svuota info registrazione
+      document.getElementById('reg-info').style.display = 'none';
+    }, 1500);
   } else if (res && res.error) {
     mostraInfoReg('✗ ' + res.error, 'err', info);
   } else {
