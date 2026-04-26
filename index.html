@@ -1674,6 +1674,8 @@ function getCachedConfig() {
     if (!raw) return null;
     const { data, ts } = JSON.parse(raw);
     if (Date.now() - ts > 3600000) return null; // scaduta dopo 1h
+    // Invalida cache se manca sport_distanze (versione vecchia)
+    if (!data.sport_distanze || Object.keys(data.sport_distanze).length === 0) return null;
     return data;
   } catch(e) { return null; }
 }
@@ -1682,7 +1684,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbwGWsm2U2QabL8Zc56TrvQ7tCXlUC-UVuxXsFBBlXa-0WQdmIl_AqgSUBad78HKKpmg/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -2033,11 +2035,13 @@ function onSportChange(sport) {
   const matchKey = Object.keys(sportDistanze).find(k =>
     k.toLowerCase() === sportLower
   );
+  console.log('[sportChange] sport:', sportLower, '| chiavi disponibili:', Object.keys(sportDistanze), '| match:', matchKey);
   if (matchKey && sportDistanze[matchKey].length) {
     distanzeFiltrate = sportDistanze[matchKey];
   } else {
     // Fallback: mostra tutte le distanze
     distanzeFiltrate = c.distanze || [];
+    console.warn('[sportChange] Nessun match — mostro tutte le distanze');
   }
 
   distanzeFiltrate.forEach(d => {
@@ -4634,7 +4638,11 @@ function renderComparator() {
     chartInstances['comp'] = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: filtrate.map(g => (g.data||'').slice(0,4)),
+        labels: filtrate.map(g => {
+          const anno  = (g.data||'').slice(0,4);
+          const luogo = (g.luogo||'');
+          return luogo ? [anno, luogo] : [anno];
+        }),
         datasets: [{
           label: tipoGara + ' · ' + luogo,
           data: secsArr,
@@ -4923,7 +4931,9 @@ async function confermaResetPassword() {
   mostraInfoReg('⟳ Aggiornamento password...', 'loading', info);
 
   // Cerca l'utente per email e aggiorna la password
-  const res = await gsPost('resetPasswordByEmail', { email: email, password: pwd.trim() });
+  console.log('[RESET] Invio reset per email:', email);
+  const res = await gsPost('resetPasswordByEmail', { email: email, password: pwd.trim(), utente_id: '' });
+  console.log('[RESET] Risposta:', JSON.stringify(res));
 
   if (res && res.updated) {
     mostraInfoReg('✓ Password aggiornata! Ora puoi accedere.', 'ok', info);
@@ -5061,28 +5071,4 @@ function updateMapColors() {
           <div style="color:var(--accent);font-weight:600;margin-bottom:4px;">${gs.length} gar${gs.length===1?'a':'e'} · ${Math.round(kmR)} km</div>
           ${list}${more}`;
       }
-      const box = document.getElementById('italy-map-container').getBoundingClientRect();
-      let tx = e.clientX - box.left + 14;
-      let ty = e.clientY - box.top + 14;
-      if (tx + 230 > box.width) tx -= 245;
-      if (ty + 170 > box.height) ty -= 175;
-      tooltip.style.left = Math.max(0,tx) + 'px';
-      tooltip.style.top = Math.max(0,ty) + 'px';
-      tooltip.style.opacity = '1';
-    };
-
-    path.onmouseleave = function() {
-      path.style.filter = '';
-      path.style.opacity = '1';
-      if (tooltip) tooltip.style.opacity = '0';
-    };
-  });
-}
-
-function loadMap() {
-  // SVG già nel DOM — aggiorna solo i colori
-  updateMapColors();
-}
-</script>
-</body>
-</html>
+      const box = document.getElementById('italy-map-container').getBo
