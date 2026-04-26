@@ -633,7 +633,7 @@
   <div class="form-box" style="max-width:520px;">
     <div class="form-title" id="login-title">Accedi a <span>I-Run</span></div>
 
-    <!-- TAB LOGIN / REGISTRAZIONE -->
+    <!-- TAB LOGIN / REGISTRAZIONE / RESET -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);">
       <button id="tab-login" onclick="switchAuthTab('login')"
         style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;">
@@ -642,6 +642,10 @@
       <button id="tab-reg" onclick="switchAuthTab('reg')"
         style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;">
         Registrati
+      </button>
+      <button id="tab-reset" onclick="switchAuthTab('reset')"
+        style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;font-family:'Barlow',sans-serif;font-size:14px;">
+        Password dimenticata
       </button>
     </div>
 
@@ -656,10 +660,42 @@
         <input class="form-input" id="login-pwd" type="password" placeholder="••••••••" />
       </div>
       <div id="login-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
-      <div class="form-actions" style="margin-top:20px;">
+      <div style="text-align:right;margin-top:8px;">
+        <button onclick="switchAuthTab('reset')" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0;font-family:'Barlow',sans-serif;">
+          Password dimenticata?
+        </button>
+      </div>
+      <div class="form-actions" style="margin-top:12px;">
         <button class="btn-secondary" id="login-cancel-btn" onclick="closeLoginModal()" style="display:none;">Annulla</button>
         <button class="btn-secondary" id="login-logoff-btn" onclick="logoff()" style="display:none;color:#ef9a9a;">← Esci dall'account</button>
         <button class="btn-primary" onclick="confermaLogin()" style="flex:1;">Accedi</button>
+      </div>
+    </div>
+
+    <!-- FORM RESET PASSWORD -->
+    <div id="auth-reset-form" style="display:none;">
+      <div style="background:rgba(255,87,34,0.06);border:1px solid rgba(255,87,34,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;">
+        Inserisci la tua email e scegli una nuova password.<br>
+        <span style="color:var(--text3);font-size:12px;">Nessuna verifica via email — la password viene aggiornata direttamente.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email <span style="color:var(--accent)">*</span></label>
+        <input class="form-input" id="reset-email" type="email" placeholder="la tua email registrata" autocomplete="email" />
+      </div>
+      <div class="form-row" style="margin-top:12px;">
+        <div class="form-group">
+          <label class="form-label">Nuova password <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reset-pwd" type="password" placeholder="min. 6 caratteri" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Conferma password <span style="color:var(--accent)">*</span></label>
+          <input class="form-input" id="reset-pwd2" type="password" placeholder="ripeti la password" />
+        </div>
+      </div>
+      <div id="reset-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
+      <div class="form-actions" style="margin-top:20px;">
+        <button class="btn-secondary" onclick="switchAuthTab('login')">Torna al login</button>
+        <button class="btn-primary" onclick="confermaResetPassword()" style="flex:1;">Aggiorna password</button>
       </div>
     </div>
 
@@ -4953,6 +4989,36 @@ async function confermaRegistrazione() {
     mostraInfoReg('✗ ' + res.error, 'err', info);
   } else {
     mostraInfoReg('✗ Errore nella registrazione. Riprova.', 'err', info);
+  }
+}
+
+async function confermaResetPassword() {
+  const email = (document.getElementById('reset-email').value || '').trim();
+  const pwd   = document.getElementById('reset-pwd').value;
+  const pwd2  = document.getElementById('reset-pwd2').value;
+  const info  = document.getElementById('reset-info');
+
+  if (!email) { mostraInfoReg('Inserisci la tua email', 'err', info); return; }
+  if (!pwd)   { mostraInfoReg('Inserisci la nuova password', 'err', info); return; }
+  if (pwd.length < 6) { mostraInfoReg('Password troppo corta (min. 6 caratteri)', 'err', info); return; }
+  if (pwd !== pwd2)   { mostraInfoReg('Le password non corrispondono', 'err', info); return; }
+
+  mostraInfoReg('⟳ Aggiornamento password...', 'loading', info);
+
+  // Cerca l'utente per email e aggiorna la password
+  const res = await gsPost('resetPasswordByEmail', { email: email, password: pwd.trim() });
+
+  if (res && res.updated) {
+    mostraInfoReg('✓ Password aggiornata! Ora puoi accedere.', 'ok', info);
+    setTimeout(() => {
+      switchAuthTab('login');
+      document.getElementById('login-uid').value = email;
+      document.getElementById('login-pwd').value = '';
+    }, 1500);
+  } else if (res && res.error) {
+    mostraInfoReg('✗ ' + res.error, 'err', info);
+  } else {
+    mostraInfoReg('✗ Impossibile aggiornare. Verifica che la email sia corretta.', 'err', info);
   }
 }
 
