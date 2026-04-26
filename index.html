@@ -1635,7 +1635,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbzYKyhoW1aU41W124JFfxXq0KFEbuKhfB9Kio_LcaW9FDImZ3ZzbzZbKcdGSzWY6Kst/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -1679,15 +1679,13 @@ async function gsGet(params) {
     + '&utente_id=' + encodeURIComponent(uid)
     + Object.entries(params).map(([k,v]) => '&'+k+'='+encodeURIComponent(v)).join('');
   try {
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 8000);
-    const res  = await fetch(url, { signal: controller.signal });
-    clearTimeout(tid);
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+    const res  = await Promise.race([fetch(url), timeout]);
     const json = await res.json();
     if (!json.ok) console.warn('gsGet error:', json.error);
     return json.data || null;
   } catch(e) {
-    if (e.name !== 'AbortError') console.warn('gsGet fetch error:', e);
+    console.warn('gsGet fetch error:', e.message);
     return null;
   }
 }
@@ -1696,22 +1694,28 @@ async function gsPost(action, data) {
   const uid = getUtenteId();
   if (data && !data.utente_id) data.utente_id = uid;
   try {
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 8000);
-    const res  = await fetch(GS_URL, {
+    const fetchPromise = fetch(GS_URL, {
       method: 'POST',
       body: JSON.stringify({ token: GS_TOKEN, action, data }),
-      signal: controller.signal,
     });
-    clearTimeout(tid);
-    const json = await res.json();
-    if (!json.ok) console.warn('gsPost error:', json.error);
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+    const res = await Promise.race([fetchPromise, timeout]);
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch(parseErr) {
+      console.error('[gsPost] Risposta non JSON:', text.slice(0, 200));
+      return null;
+    }
+    if (!json.ok) console.warn('[gsPost] Errore:', json.error);
     // loginUtente restituisce ok nel corpo, non in data
     if (json.ok && json.data) return json.data;
-    if (json.ok && json.ok === true) return json;
+    if (json.ok === true) return json;
     return json.data || null;
   } catch(e) {
-    if (e.name !== 'AbortError') console.warn('gsPost fetch error:', e);
+    if (e.name !== 'AbortError') console.error('[gsPost] Fetch error:', e.message);
+    else console.warn('[gsPost] Timeout per action:', action);
     return null;
   }
 }
@@ -1827,10 +1831,8 @@ async function caricaConfigurazione() {
       + '?token=' + encodeURIComponent(GS_TOKEN)
       + '&action=getConfigurazione';
     // Timeout 5 secondi
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 5000);
-    const res  = await fetch(url, { signal: controller.signal });
-    clearTimeout(tid);
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+    const res = await Promise.race([fetch(url), timeout]);
     const json = await res.json();
     console.log('Config risposta grezza:', json);
 
@@ -1848,12 +1850,22 @@ async function caricaConfigurazione() {
       cfg.distanze = Array.isArray(cfg.distanze) ? cfg.distanze : [];
       cfg.nazioni  = Array.isArray(cfg.nazioni)  ? cfg.nazioni  : [];
       cfg.regioni  = Array.isArray(cfg.regioni)  ? cfg.regioni  : [];
-      // Costruisci sport_distanze dal foglio configurazione (colonna sport → distanza)
-      // Il foglio ha righe con sport+distanza abbinate — usiamo la stessa riga
+      // Costruisci sport_distanze dalle righe abbinate del foglio
+      // Il foglio ha: col A = sport, col B = distanza (sulla stessa riga)
       if (cfg.sport_distanze_raw) {
         cfg.sport_distanze = cfg.sport_distanze_raw;
+      } else if (cfg.righe) {
+        // righe = array di {sport, distanza} dal nuovo endpoint
+        const mappa = {};
+        cfg.righe.forEach(r => {
+          if (!r.sport || !r.distanza) return;
+          const k = r.sport.toLowerCase();
+          if (!mappa[k]) mappa[k] = [];
+          mappa[k].push(r.distanza);
+        });
+        cfg.sport_distanze = mappa;
       } else {
-        // Usa defaults basati su keyword
+        // Costruisci dai due array paralleli (sport[i] abbinato a distanze[i])
         cfg.sport_distanze = {};
       }
       setConfig(cfg);
@@ -1974,28 +1986,15 @@ function onSportChange(sport) {
   const sportLower = (sport||'').toLowerCase();
   let distanzeFiltrate = [];
 
-  if (sportDistanze[sport] && sportDistanze[sport].length) {
-    // Usa la mappatura esatta dal foglio
-    distanzeFiltrate = sportDistanze[sport];
+  // Cerca corrispondenza in sport_distanze con match case-insensitive
+  const matchKey = Object.keys(sportDistanze).find(k =>
+    k.toLowerCase() === sportLower
+  );
+  if (matchKey && sportDistanze[matchKey].length) {
+    distanzeFiltrate = sportDistanze[matchKey];
   } else {
-    // Fallback: filtra per parole chiave
-    const parole = {
-      corsa: ['km','maratona','mezza','ultra','passatore'],
-      trail: ['trail','km','ultra'],
-      ultra: ['ultra','km','100'],
-      bici: ['km','granfondo'],
-      nuoto: ['km','m','vasca'],
-      triathlon: ['triathlon','sprint','olimpico'],
-      duathlon: ['duathlon'],
-      ironman: ['ironman','70.3','140.6','113','226'],
-      tri703: ['70.3','113'],
-    };
-    const kw = parole[sportLower] || [];
-    distanzeFiltrate = kw.length
-      ? (c.distanze||[]).filter(d => kw.some(k => d.toLowerCase().includes(k)))
-      : (c.distanze||[]);
-    // Se nessun match, mostra tutte
-    if (!distanzeFiltrate.length) distanzeFiltrate = c.distanze || [];
+    // Fallback: mostra tutte le distanze
+    distanzeFiltrate = c.distanze || [];
   }
 
   distanzeFiltrate.forEach(d => {
@@ -3397,11 +3396,9 @@ async function cercaRecensioni(query) {
 async function caricaUtentiCache() {
   if (_utentiCache.length > 0) return;
   try {
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 5000);
     const url = GS_URL + '?token=' + encodeURIComponent(GS_TOKEN) + '&action=getAllUtenti';
-    const res  = await fetch(url, { signal: controller.signal });
-    clearTimeout(tid);
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+    const res = await Promise.race([fetch(url), timeout]);
     const json = await res.json();
     if (json.ok && Array.isArray(json.data)) {
       _utentiCache = json.data;
@@ -3870,8 +3867,14 @@ function popolaTipoGaraP(sport) {
   const sel = document.getElementById('p-tipo-gara');
   if (!sel) return;
   const c = getConfig();
-  sel.innerHTML = '<option value="">Seleziona tipo...</option>';
-  (c.distanze || []).forEach(d => {
+  const sportLower = (sport||'').toLowerCase();
+  const sportDistanze = c.sport_distanze || {};
+  const matchKey = Object.keys(sportDistanze).find(k => k.toLowerCase() === sportLower);
+  const distanze = (matchKey && sportDistanze[matchKey].length)
+    ? sportDistanze[matchKey]
+    : (c.distanze || []);
+  sel.innerHTML = '<option value="">Seleziona tipo gara...</option>';
+  distanze.forEach(d => {
     const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
   });
 }
@@ -4828,6 +4831,8 @@ async function confermaLogin() {
   }
 
   setInfo('⟳ Connessione al foglio...', 'loading');
+  console.log('[LOGIN] Tentativo login per:', email);
+  console.log('[LOGIN] GS_URL:', GS_URL.slice(0, 60) + '...');
 
   // Timeout di 8 secondi — se non risponde, accesso offline
   let res = null;
@@ -4839,11 +4844,14 @@ async function confermaLogin() {
       gsPost('loginUtente', { email: email, password: pwd }),
       timeoutPromise
     ]);
+    console.log('[LOGIN] Risposta ricevuta:', JSON.stringify(res));
   } catch(e) {
-    res = null; // timeout o errore rete
+    console.error('[LOGIN] Errore fetch/timeout:', e.message);
+    res = null;
   }
 
   if (res && res.ok) {
+    console.log('[LOGIN] OK — utente_id:', res.utente_id);
     // LOGIN OK
     const profilo = res;
     setUtenteId(profilo.utente_id);
