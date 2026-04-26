@@ -3075,7 +3075,26 @@ function sposta2Gare(id) {
 
 // ============ RICERCA GLOBALE ============
 // Cache utenti per la ricerca (caricati dal foglio)
-let _utentiCache = [];
+let _utentiCache = [];        // utenti dal foglio
+let _gareCache   = [];        // gare di tutti gli utenti (per ricerca globale)
+let _gareCacheTs = 0;         // timestamp ultimo aggiornamento
+
+async function caricaGareCache() {
+  // Ricarica max ogni 5 minuti
+  if (_gareCache.length > 0 && Date.now() - _gareCacheTs < 300000) return;
+  if (!_utentiCache.length) await caricaUtentiCache();
+  if (!_utentiCache.length) return;
+  // Carica gare di tutti gli utenti in parallelo (max 20)
+  const promises = _utentiCache.slice(0, 20).map(async u => {
+    try {
+      const gare = await gsGet({ action: 'getGare', utente_id: u.utente_id });
+      if (!Array.isArray(gare)) return;
+      gare.map(normalizzaGara).forEach(g => _gareCache.push({ ...g, _autore: u }));
+    } catch(e) {}
+  });
+  await Promise.allSettled(promises);
+  _gareCacheTs = Date.now();
+}
 
 // Modal per le recensioni di tutti gli utenti su una gara
 async function cercaRecensioni(query) {
@@ -3095,28 +3114,62 @@ async function cercaRecensioni(query) {
     return;
   }
 
-  const ql = query.toLowerCase();
+  // Supporta query speciale "luogo_ID:nomeGara" dal dropdown
+  let queryNome = null;
+  let queryLoc  = query;
+  if (query.includes('_ID:')) {
+    const parts = query.split('_ID:');
+    queryLoc  = parts[0];
+    queryNome = parts[1].toLowerCase();
+  }
+  const ql = queryLoc.toLowerCase();
+
   let tutteRecensioni = [];
 
-  // Per ogni utente, carica le sue gare e filtra quelle che matchano
-  const promises = _utentiCache.map(async u => {
-    try {
-      const gare = await gsGet({ action: 'getGare', utente_id: u.utente_id });
-      if (!Array.isArray(gare)) return;
-      const match = gare.map(normalizzaGara).filter(g =>
-        g.rating && (g.rating.percorso || g.rating.ristori || g.rating.organizzazione) &&
-        (
-          (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
-          (g.luogo||'').toLowerCase().includes(ql) ||
-          (g.regione||'').toLowerCase().includes(ql)
-        )
-      );
-      match.forEach(g => tutteRecensioni.push({ ...g, _autore: u }));
-    } catch(e) {}
-  });
+  // Usa cache se disponibile, altrimenti carica dal foglio
+  let gareDaCercare = _gareCache.length > 0
+    ? _gareCache
+    : null;
 
-  // Aspetta tutte le richieste (max 10 utenti per performance)
-  await Promise.allSettled(promises.slice(0, 10));
+  if (!gareDaCercare) {
+    await caricaGareCache();
+    gareDaCercare = _gareCache;
+  }
+
+  if (gareDaCercare.length > 0) {
+    // Usa la cache
+    gareDaCercare.filter(g =>
+      g.rating && (g.rating.percorso || g.rating.ristori || g.rating.organizzazione) &&
+      (queryNome
+        ? (g.nome||g.tipo_gara||'').toLowerCase() === queryNome
+        : (
+            (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
+            (g.luogo||'').toLowerCase().includes(ql) ||
+            (g.regione||'').toLowerCase().includes(ql)
+          )
+      )
+    ).forEach(g => tutteRecensioni.push(g));
+  } else {
+    // Fallback: carica per ogni utente
+    const promises = _utentiCache.map(async u => {
+      try {
+        const gare = await gsGet({ action: 'getGare', utente_id: u.utente_id });
+        if (!Array.isArray(gare)) return;
+        gare.map(normalizzaGara).filter(g =>
+          g.rating && (g.rating.percorso || g.rating.ristori || g.rating.organizzazione) &&
+          (queryNome
+            ? (g.nome||g.tipo_gara||'').toLowerCase() === queryNome
+            : (
+                (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
+                (g.luogo||'').toLowerCase().includes(ql) ||
+                (g.regione||'').toLowerCase().includes(ql)
+              )
+          )
+        ).forEach(g => tutteRecensioni.push({ ...g, _autore: u }));
+      } catch(e) {}
+    });
+    await Promise.allSettled(promises.slice(0, 10));
+  }
 
   if (!tutteRecensioni.length) {
     document.getElementById('pp-body').innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3);">
@@ -3194,34 +3247,58 @@ async function caricaUtentiCache() {
 }
 
 function onGlobalSearch(q) {
-  const dd = document.getElementById('search-dropdown');
+  const dd  = document.getElementById('search-dropdown');
   const clr = document.getElementById('search-clear');
   if (clr) clr.style.display = q ? 'block' : 'none';
   if (!q || q.length < 2) { dd.style.display = 'none'; return; }
 
   const ql = q.toLowerCase();
-  const gare = getGare();
 
-  // Ricerca gare (mie)
-  const gFound = gare.filter(g =>
+  // ── Risultati UTENTI (dalla cache) ──
+  const uFound = _utentiCache.filter(u => {
+    const nomeCompleto = ((u.nome||'')+' '+(u.cognome||'')).toLowerCase();
+    return nomeCompleto.includes(ql) || (u.sport_preferito||'').toLowerCase().includes(ql);
+  }).filter(u => u.utente_id !== getUtenteId()).slice(0, 4);
+
+  // ── Risultati GARE (mie + cache pubblica) ──
+  // Mie gare (da localStorage)
+  const mieGare = getGare().filter(g =>
     (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
     (g.luogo||'').toLowerCase().includes(ql) ||
     (g.regione||'').toLowerCase().includes(ql) ||
-    (g.sport||'').toLowerCase().includes(ql) ||
-    (g.data||'').includes(ql)
-  ).slice(0, 6);
+    (g.sport||'').toLowerCase().includes(ql)
+  ).slice(0, 4).map(g => ({ ...g, _isMia: true }));
 
-  // Ricerca utenti (dalla cache)
-  const uFound = _utentiCache.filter(u =>
-    (u.nome||'').toLowerCase().includes(ql) ||
-    (u.cognome||'').toLowerCase().includes(ql) ||
-    (u.sport_preferito||'').toLowerCase().includes(ql) ||
-    ((u.nome||'')+' '+(u.cognome||'')).toLowerCase().includes(ql)
-  ).filter(u => u.utente_id !== getUtenteId()).slice(0, 4);
+  // Gare pubbliche (dalla cache)
+  const gareAltrui = _gareCache.filter(g =>
+    g._autore && g._autore.utente_id !== getUtenteId() && (
+      (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
+      (g.luogo||'').toLowerCase().includes(ql) ||
+      (g.regione||'').toLowerCase().includes(ql) ||
+      (g.sport||'').toLowerCase().includes(ql)
+    )
+  );
 
-  if (!gFound.length && !uFound.length) {
+  // Aggrega gare altrui per gara (nome+luogo) con media voti
+  const aggGare = {};
+  gareAltrui.forEach(g => {
+    const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
+    if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, hasRating: false, recensioni: [] };
+    aggGare[k].count++;
+    const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
+    if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].hasRating = true; aggGare[k].recensioni.push(g); }
+  });
+  const gPubliche = Object.values(aggGare)
+    .sort((a,b) => b.count - a.count)
+    .slice(0, 5);
+
+  const hasCacheGare = _gareCache.length > 0;
+  const hasResults   = uFound.length || mieGare.length || gPubliche.length;
+
+  if (!hasResults && hasCacheGare) {
     dd.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
-      <div style="font-size:24px;margin-bottom:6px;">🔍</div>Nessun risultato per "<strong>${q}</strong>"
+      <div style="font-size:24px;margin-bottom:6px;">🔍</div>
+      Nessun risultato per "<strong>${q}</strong>"
     </div>`;
     dd.style.display = 'block';
     return;
@@ -3229,64 +3306,121 @@ function onGlobalSearch(q) {
 
   let html = '';
 
-  // Sezione utenti
+  // ── Sezione UTENTI ──
   if (uFound.length) {
-    html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">Utenti</div>`;
+    html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:6px;">
+      <span>👤</span> Utenti
+    </div>`;
     html += uFound.map(u => {
-      const nome = [u.nome||'', u.cognome||''].filter(Boolean).join(' ') || u.utente_id;
-      const init = nome.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+      const nomeCompleto = [u.nome||'', u.cognome||''].filter(Boolean).join(' ') || u.utente_id;
+      const init  = nomeCompleto.split(' ').map(p=>p[0]).filter(Boolean).join('').slice(0,2).toUpperCase();
       const sport = u.sport_preferito || '';
       const isPub = u.profilo_pubblico !== false && String(u.profilo||'').toUpperCase() !== 'PRIVATO';
+      // Evidenzia la parte che corrisponde alla query
+      const nomeHL = evidenzia(nomeCompleto, q);
       return `<div onclick="apriProfiloPubblico('${u.utente_id}');closeSearch();"
         style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"
         onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${init}</div>
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;">${nome} ${!isPub ? '<span style="font-size:10px;color:var(--text3);">🔒</span>' : ''}</div>
-          <div style="font-size:11px;color:var(--text3);">${sport ? sportIcon(sport.toLowerCase())+' '+sport : 'Atleta'}</div>
+          <div style="font-size:13px;font-weight:600;">${nomeHL} ${!isPub ? '<span style="font-size:11px;" title="Profilo privato">🔒</span>' : '<span style="font-size:11px;" title="Profilo pubblico">🌐</span>'}</div>
+          <div style="font-size:11px;color:var(--text3);">${sport ? sportIcon(sport.toLowerCase())+' '+sport : 'Atleta I-Run'}</div>
         </div>
-        <div style="font-size:10px;color:var(--text3);">Profilo →</div>
+        <span style="font-size:10px;color:var(--text3);">Profilo →</span>
       </div>`;
     }).join('');
   }
 
-  // Sezione mie gare
-  if (gFound.length) {
-    html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">Le mie gare</div>`;
-    html += gFound.map(g => {
+  // ── Sezione MIE GARE ──
+  if (mieGare.length) {
+    html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:6px;">
+      <span>🏅</span> Le mie gare
+    </div>`;
+    html += mieGare.map(g => {
       const dataFmt = g.data ? fmtDataIT(g.data) : '';
+      const avg = g.rating ? Math.round((g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3) : 0;
+      const nomeHL = evidenzia(g.nome||g.tipo_gara||'', q);
+      const luogoHL = evidenzia(g.luogo||'', q);
       return `<div onclick="openDetail(${g.id});closeSearch();"
         style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"
         onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
         <span style="font-size:20px;">${sportIcon(g.sport)}</span>
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;">${g.nome||g.tipo_gara}</div>
-          <div style="font-size:11px;color:var(--text3);">${dataFmt}${g.luogo?' · '+g.luogo:''} · ${g.distanza}km</div>
+          <div style="font-size:13px;font-weight:600;">${nomeHL} ${g.pb?'<span style="color:#ffd54f;font-size:11px;">★ PB</span>':''}</div>
+          <div style="font-size:11px;color:var(--text3);">${dataFmt} · ${luogoHL} · ${g.distanza}km</div>
+          ${avg > 0 ? `<div style="font-size:11px;color:#ffd54f;margin-top:2px;">${'★'.repeat(avg)}${'☆'.repeat(5-avg)}</div>` : ''}
         </div>
-        ${g.pb ? '<span style="font-size:11px;color:#ffd54f;">★ PB</span>' : ''}
       </div>`;
     }).join('');
   }
 
-  // Link "Cerca recensioni" sempre presente
-  html += `<div style="padding:10px 16px;border-top:1px solid var(--border);text-align:center;">
-    <button class="btn-secondary" style="font-size:12px;width:100%;" onclick="cercaRecensioni('${q.replace(/'/g,"\'")}');closeSearch();">
-      🔍 Cerca recensioni per "<strong>${q}</strong>"
-    </button>
-  </div>`;
+  // ── Sezione GARE DI TUTTI ──
+  if (gPubliche.length) {
+    html += `<div style="padding:8px 16px 4px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:6px;">
+      <span>🌍</span> Gare della community · <span style="font-weight:400;">recensioni e voti</span>
+    </div>`;
+    html += gPubliche.map(({ gara: g, count, sumAvg, hasRating, recensioni }) => {
+      const mediaAvg = hasRating ? sumAvg / recensioni.length : 0;
+      const mediaRound = Math.round(mediaAvg);
+      const nomeHL  = evidenzia(g.nome||g.tipo_gara||'', q);
+      const luogoHL = evidenzia(g.luogo||'', q);
+      // Ultima recensione
+      const ultimaRec = recensioni.sort((a,b) => String(b.data||'').localeCompare(String(a.data||'')))[0];
+      return `<div onclick="cercaRecensioni('${(g.luogo||g.nome||q).replace(/'/g,"\'")}_ID:${(g.nome||g.tipo_gara||'').replace(/'/g,"\'")}');closeSearch();"
+        style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);"
+        onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:20px;">${sportIcon(g.sport)}</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">${nomeHL}</div>
+            <div style="font-size:11px;color:var(--text3);">📍 ${luogoHL}${g.regione?' · '+g.regione:''} · ${g.distanza}km</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
+              ${hasRating ? `<span style="font-size:12px;color:#ffd54f;">${'★'.repeat(mediaRound)}${'☆'.repeat(5-mediaRound)}</span>
+              <span style="font-size:11px;color:var(--text3);">${mediaAvg.toFixed(1)}/5</span>` : ''}
+              <span style="font-size:11px;color:var(--text2);">👥 ${count} partecipant${count===1?'e':'i'}</span>
+              ${ultimaRec ? `<span style="font-size:11px;color:var(--text3);">📝 ultima rec. ${fmtDataIT(ultimaRec.data)}</span>` : ''}
+            </div>
+          </div>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap;">Vedi →</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
-  // Pulsante cerca utenti se non in cache
-  if (!_utentiCache.length) {
-    html += `<div style="padding:6px 16px 10px;text-align:center;">
-      <button class="btn-secondary" style="font-size:12px;" onclick="caricaUtentiCache().then(()=>onGlobalSearch(document.getElementById('global-search').value))">
-        🔄 Includi utenti nella ricerca
+  // ── Se cache gare non ancora caricata ──
+  if (!hasCacheGare) {
+    html += `<div style="padding:10px 16px;text-align:center;border-top:1px solid var(--border);">
+      <button class="btn-secondary" style="font-size:12px;width:100%;"
+        onclick="showToast('⟳ Caricamento gare community...');caricaGareCache().then(()=>onGlobalSearch(document.getElementById('global-search').value))">
+        🌍 Cerca anche nelle gare della community
       </button>
+    </div>`;
+  }
+
+  if (!html) {
+    html = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
+      <div style="font-size:24px;margin-bottom:6px;">🔍</div>
+      Nessun risultato per "<strong>${q}</strong>"
     </div>`;
   }
 
   dd.innerHTML = html;
   dd.style.display = 'block';
 }
+
+// Evidenzia la parte che corrisponde alla query
+function evidenzia(testo, query) {
+  if (!testo || !query) return testo || '';
+  const ql  = query.toLowerCase();
+  const idx = testo.toLowerCase().indexOf(ql);
+  if (idx === -1) return testo;
+  return testo.slice(0, idx)
+    + '<mark style="background:rgba(255,87,34,0.25);color:var(--accent);border-radius:2px;padding:0 1px;">'
+    + testo.slice(idx, idx + query.length)
+    + '</mark>'
+    + testo.slice(idx + query.length);
+}
+
 
 function clearSearch() {
   const inp = document.getElementById('global-search');
@@ -4113,4 +4247,674 @@ function _OLD_renderStats_UNUSED() {
     <div class="card"><div class="cl">Gare totali</div><div class="cv" style="color:var(--accent)">${gare.length}</div><div class="cs">${finisher.length} finisher · ${gare.length-finisher.length} DNF</div></div>
     <div class="card"><div class="cl">Km gareggiati</div><div class="cv" style="color:var(--accent)">${Math.round(kmTot).toLocaleString('it')}</div><div class="cs">dal 2015 ad oggi</div></div>
     <div class="card"><div class="cl">Personal Best</div><div class="cv" style="color:var(--accent)">${pb}</div><div class="cs">gare con PB segnato</div></div>
-    <div class="card"><div class="cl">Regioni coperte</div><div 
+    <div class="card"><div class="cl">Regioni coperte</div><div class="cv" style="color:var(--accent)">${regioni}</div><div class="cs">su 20 regioni italiane</div></div>
+  `;
+
+  // ===== GRAFICO MARATONE =====
+  const maratone = gare
+    .filter(g => g.sport === 'corsa' && Math.abs(g.distanza - 42.2) < 0.5 && g.tempo)
+    .sort((a,b) => a.data.localeCompare(b.data));
+
+  destroyChart('maratone');
+  if (maratone.length) {
+    const ctx1 = document.getElementById('chart-maratone').getContext('2d');
+    const labels = maratone.map(g => g.data.slice(0,7) + ' ' + g.luogo.split('-')[0]);
+    const data = maratone.map(g => Math.round(garaTempoSecs(g)/60 * 10) / 10);
+    const minVal = Math.min(...data) - 5;
+    const maxVal = Math.max(...data) + 5;
+    chartInstances['maratone'] = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Minuti',
+          data,
+          borderColor: CHART_COLORS.accent,
+          backgroundColor: 'rgba(255,87,34,0.1)',
+          borderWidth: 2.5,
+          pointBackgroundColor: maratone.map(g => g.pb ? '#ffd54f' : CHART_COLORS.accent),
+          pointRadius: maratone.map(g => g.pb ? 7 : 4),
+          pointHoverRadius: 8,
+          fill: true,
+          tension: 0.3,
+        }]
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: {
+            ...CHART_DEFAULTS.scales.y,
+            min: minVal, max: maxVal,
+            ticks: {
+              ...CHART_DEFAULTS.scales.y.ticks,
+              callback: v => {
+                // Mostra solo tick ogni 5 minuti (300 secondi)
+                if (v % 300 !== 0) return '';
+                const h = Math.floor(v/3600);
+                const m = Math.floor((v%3600)/60);
+                return `${h}h${String(m).padStart(2,'0')}`;
+              }
+            }
+          }
+        },
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            ...CHART_DEFAULTS.plugins.tooltip,
+            callbacks: {
+              label: ctx => {
+                const g = maratone[ctx.dataIndex];
+                const pb = g.pb ? ' ★ PB' : '';
+                return `${secsToHMS(garaTempoSecs(g))}${pb}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ===== GRAFICO KM PER ANNO =====
+  const byYear = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    byYear[y] = (byYear[y]||0) + (g.distanza||0);
+  });
+  const years = Object.keys(byYear).sort();
+
+  // ===== KM PER ANNO — stacked per sport =====
+  const sportOrder = ['corsa','ultra','trail','triathlon','tri703','ironman','duathlon','bici','nuoto'];
+  const sportLabelsFull = { corsa:'Corsa', ultra:'Ultra', trail:'Trail', triathlon:'Triathlon Ol.', tri703:'70.3', ironman:'Ironman', duathlon:'Duathlon', bici:'Bici', nuoto:'Nuoto' };
+  const sportColorsFull = { corsa:'#ff5722', ultra:'#ff8a65', trail:'#4caf50', triathlon:'#2196f3', tri703:'#1565c0', ironman:'#0d47a1', duathlon:'#9c27b0', bici:'#ffc107', nuoto:'#009688' };
+
+  // Calcola km per anno per sport
+  const kmByYearSport = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    const s = g.sport;
+    if (!kmByYearSport[y]) kmByYearSport[y] = {};
+    kmByYearSport[y][s] = (kmByYearSport[y][s]||0) + (g.distanza||0);
+  });
+
+  // Trova sport presenti
+  const sportPresenti = [...new Set(gare.map(g=>g.sport))].sort((a,b) => sportOrder.indexOf(a)-sportOrder.indexOf(b));
+
+  const kmDatasets = sportPresenti.map(s => ({
+    label: sportLabelsFull[s]||s,
+    data: years.map(y => Math.round((kmByYearSport[y]||{})[s]||0)),
+    backgroundColor: sportColorsFull[s]||'#888',
+    borderColor: 'rgba(0,0,0,0.3)',
+    borderWidth: 0.5,
+    borderRadius: 2,
+    stack: 'km',
+  }));
+
+  destroyChart('km-anno');
+  const ctx2 = document.getElementById('chart-km-anno').getContext('2d');
+  chartInstances['km-anno'] = new Chart(ctx2, {
+    type: 'bar',
+    data: { labels: years, datasets: kmDatasets },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, stacked: true },
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          stacked: true,
+          ticks: {
+            ...CHART_DEFAULTS.scales.y.ticks,
+            callback: v => (v % 50 === 0) ? v.toLocaleString('it') : ''
+          }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: { labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:11}, boxWidth:12, padding:8 } },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} km` }
+        }
+      }
+    }
+  });
+
+  
+  // ===== GRAFICO SPORT =====
+  const sportCount = {};
+  gare.forEach(g => {
+    const sg = sportgruppo(g.sport);
+    sportCount[sg] = (sportCount[sg]||0) + 1;
+  });
+  const sportLabels = { corsa:'Corsa', triathlon:'Triathlon', ultra:'Ultra', trail:'Trail', bici:'Bici', nuoto:'Nuoto', duathlon:'Duathlon' };
+  const sportColors = ['#ff5722','#2196f3','#ff8a65','#4caf50','#ffc107','#009688','#9c27b0'];
+
+  destroyChart('sport');
+  const ctx3 = document.getElementById('chart-sport').getContext('2d');
+  const sportKeys = Object.keys(sportCount).sort((a,b) => sportCount[b]-sportCount[a]);
+  chartInstances['sport'] = new Chart(ctx3, {
+    type: 'doughnut',
+    data: {
+      labels: sportKeys.map(k => sportLabels[k]||k),
+      datasets: [{
+        data: sportKeys.map(k => sportCount[k]),
+        backgroundColor: sportColors.slice(0, sportKeys.length),
+        borderColor: '#111',
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position:'right', labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:12}, boxWidth:14, padding:10 } },
+        tooltip: { ...CHART_DEFAULTS.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} gare` } }
+      }
+    }
+  });
+
+  // ===== GRAFICO GARE PER ANNO =====
+  const garePerAnno = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    garePerAnno[y] = (garePerAnno[y]||0) + 1;
+  });
+
+  destroyChart('gare-anno');
+  const ctx4 = document.getElementById('chart-gare-anno').getContext('2d');
+
+  // Calcola gare per anno per sport
+  const gareByYearSport = {};
+  gare.forEach(g => {
+    const y = g.data.slice(0,4);
+    const s = g.sport;
+    if (!gareByYearSport[y]) gareByYearSport[y] = {};
+    gareByYearSport[y][s] = (gareByYearSport[y][s]||0) + 1;
+  });
+  const yearsGare = Object.keys(gareByYearSport).sort();
+
+  const gareDatasets = sportPresenti.map(s => ({
+    label: sportLabelsFull[s]||s,
+    data: yearsGare.map(y => (gareByYearSport[y]||{})[s]||0),
+    backgroundColor: sportColorsFull[s]||'#888',
+    borderColor: 'rgba(0,0,0,0.3)',
+    borderWidth: 0.5,
+    borderRadius: 2,
+    stack: 'gare',
+  }));
+
+  chartInstances['gare-anno'] = new Chart(ctx4, {
+    type: 'bar',
+    data: { labels: yearsGare, datasets: gareDatasets },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: {
+        x: { ...CHART_DEFAULTS.scales.x, stacked: true },
+        y: {
+          ...CHART_DEFAULTS.scales.y,
+          stacked: true,
+          ticks: {
+            ...CHART_DEFAULTS.scales.y.ticks,
+            stepSize: 1,
+            callback: v => Number.isInteger(v) ? v : ''
+          }
+        }
+      },
+      plugins: {
+        ...CHART_DEFAULTS.plugins,
+        legend: { labels: { color: CHART_COLORS.text, font:{family:'Barlow',size:11}, boxWidth:12, padding:8 } },
+        tooltip: {
+          ...CHART_DEFAULTS.plugins.tooltip,
+          callbacks: {
+            label: ctx => ctx.raw > 0 ? ` ${ctx.dataset.label}: ${ctx.raw} gar${ctx.raw===1?'a':'e'}` : null,
+            filter: item => item.raw > 0
+          }
+        }
+      }
+    }
+  });
+
+  // ===== POPOLA SELECTOR COMPARATORE =====
+  populateComparator(gare);
+}
+
+function populateComparator(gare) {
+  const byNome = {};
+  gare.forEach(g => {
+    if (!byNome[g.nome]) byNome[g.nome] = [];
+    byNome[g.nome].push(g);
+  });
+
+  const ripetute = Object.entries(byNome)
+    .filter(([,gs]) => gs.length > 1)
+    .sort((a,b) => b[1].length - a[1].length);
+
+  const sel = document.getElementById('comp-selector');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Seleziona una gara ripetuta —</option>';
+  ripetute.forEach(([nome, gs]) => {
+    const opt = document.createElement('option');
+    opt.value = nome;
+    opt.textContent = `${nome} (${gs.length}x)`;
+    sel.appendChild(opt);
+  });
+  if (currentVal) sel.value = currentVal;
+}
+
+function renderComparator() {
+  const chiave = document.getElementById('comp-selector').value;
+  if (!chiave) {
+    document.getElementById('comp-content').style.display = 'none';
+    document.getElementById('comp-empty').style.display   = 'block';
+    return;
+  }
+  const [sport, tipoGara, luogo] = chiave.split('|||');
+  const gare = calcolaPBAutomatici(getGare());
+  const filtrate = gare
+    .filter(g =>
+      g.esito === 'finisher' &&
+      (g.sport||'').toLowerCase() === (sport||'').toLowerCase() &&
+      (g.tipo_gara||g.nome||'').toLowerCase() === (tipoGara||'').toLowerCase() &&
+      (g.luogo||'').toLowerCase() === (luogo||'').toLowerCase()
+    )
+    .sort((a,b) => String(a.data||'').localeCompare(String(b.data||'')));
+
+  if (filtrate.length < 2) {
+    document.getElementById('comp-content').style.display = 'none';
+    document.getElementById('comp-empty').style.display   = 'block';
+    document.getElementById('comp-empty').innerHTML = '<div style="font-size:32px;margin-bottom:8px;">📊</div><div>Servono almeno 2 edizioni per il confronto</div>';
+    return;
+  }
+
+  document.getElementById('comp-content').style.display = 'block';
+  document.getElementById('comp-empty').style.display   = 'none';
+  document.getElementById('comp-label').textContent     = filtrate.length + ' edizioni trovate';
+
+  // Grafico a barre con tempo
+  destroyChart('comp');
+  const ctx = document.getElementById('chart-comp')?.getContext('2d');
+  if (ctx) {
+    const secsArr = filtrate.map(g => garaTempoSecs(g));
+    const pbCalc  = filtrate.map(g => g.pb);
+    chartInstances['comp'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: filtrate.map(g => (g.data||'').slice(0,4)),
+        datasets: [{
+          label: tipoGara + ' · ' + luogo,
+          data: secsArr,
+          backgroundColor: filtrate.map(g => g.pb ? '#ffd54f' : CHART_COLORS.accent),
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: {
+            ...CHART_DEFAULTS.scales.y,
+            ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => secsToHMS(v) }
+          }
+        },
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: { callbacks: { label: ctx2 => secsToHMS(secsArr[ctx2.dataIndex]) + (pbCalc[ctx2.dataIndex] ? ' ★ PB' : '') } }
+        }
+      }
+    });
+  }
+
+  // Tabella di confronto
+  let tableHtml = `<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">`;
+  const secsAll  = filtrate.map(g => garaTempoSecs(g)).filter(s => s > 0);
+  const minSecs  = Math.min(...secsAll);
+  filtrate.forEach(g => {
+    const secs    = garaTempoSecs(g);
+    const isPB    = g.pb;
+    const diff    = secs - minSecs;
+    const diffStr = diff === 0 ? '' : '+' + secsToHMS(diff);
+    tableHtml += `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${isPB ? 'rgba(255,213,79,0.08)' : 'var(--bg4)'};border:1px solid ${isPB ? 'rgba(255,213,79,0.3)' : 'var(--border)'};border-radius:10px;">
+        <div style="font-family:Barlow Condensed,sans-serif;font-size:22px;font-weight:800;color:var(--accent);min-width:80px;">${secsToHMS(secs)}</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${fmtDataIT(g.data)} ${isPB ? '★ PB' : ''}</div>
+          ${diffStr ? `<div style="font-size:12px;color:var(--text3);">${diffStr} dal migliore</div>` : '<div style="font-size:12px;color:#81c784;">Migliore</div>'}
+        </div>
+      </div>`;
+  });
+  tableHtml += '</div>';
+  document.getElementById('comp-table').innerHTML = tableHtml;
+}
+
+
+function openLoginModal(prefilEmail) {
+  const uid = getUtenteId();
+  switchAuthTab('login');
+  // Non svuotare se è già stata pre-compilata (es. dopo registrazione)
+  if (prefilEmail) {
+    document.getElementById('login-uid').value = prefilEmail;
+  } else if (!document.getElementById('login-uid').value) {
+    document.getElementById('login-uid').value = '';
+  }
+  document.getElementById('login-pwd').value = '';
+  document.getElementById('login-title').innerHTML = uid
+    ? 'Account <span>I-Run</span>'
+    : 'Accedi a <span>I-Run</span>';
+  const cancelBtn = document.getElementById('login-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = uid ? 'block' : 'none';
+  const info = document.getElementById('login-info');
+  if (info) { info.style.display = 'none'; info.textContent = ''; }
+  document.getElementById('login-overlay').classList.add('open');
+}
+
+function closeLoginModal() {
+  document.getElementById('login-overlay').classList.remove('open');
+}
+
+function svuotaCacheConfig() {
+  localStorage.removeItem('irun_config');
+  _configLoaded = false;
+  _config = { sport:[], distanze:[], nazioni:[], regioni:[] };
+}
+
+function switchAuthTab(tab) {
+  const loginF = document.getElementById('auth-login-form');
+  const regF   = document.getElementById('auth-reg-form');
+  const tLogin = document.getElementById('tab-login');
+  const tReg   = document.getElementById('tab-reg');
+  if (!loginF) return;
+  if (tab === 'login') {
+    loginF.style.display = 'block'; regF.style.display = 'none';
+    tLogin.style.borderBottomColor = 'var(--accent)'; tLogin.style.color = 'var(--accent)'; tLogin.style.fontWeight = '600';
+    tReg.style.borderBottomColor   = 'transparent';   tReg.style.color   = 'var(--text3)';  tReg.style.fontWeight   = '400';
+  } else {
+    loginF.style.display = 'none'; regF.style.display = 'block';
+    tReg.style.borderBottomColor   = 'var(--accent)'; tReg.style.color   = 'var(--accent)'; tReg.style.fontWeight   = '600';
+    tLogin.style.borderBottomColor = 'transparent';   tLogin.style.color = 'var(--text3)';  tLogin.style.fontWeight = '400';
+    // Popola sport nel form registrazione
+    popolaSelectConfig();
+  }
+}
+
+async function confermaLogin() {
+  const email = document.getElementById('login-uid').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  if (!email) { alert('Inserisci la tua email'); return; }
+
+  const info = document.getElementById('login-info');
+  function setInfo(msg, tipo) {
+    info.textContent = msg;
+    info.style.display = 'block';
+    const colors = {
+      loading: ['rgba(255,193,7,0.08)','rgba(255,193,7,0.25)','var(--text2)'],
+      ok:      ['rgba(76,175,80,0.08)', 'rgba(76,175,80,0.25)', '#81c784'],
+      err:     ['rgba(244,67,54,0.08)', 'rgba(244,67,54,0.25)', '#ef9a9a'],
+    };
+    const [bg, border, color] = colors[tipo] || colors.loading;
+    info.style.background = bg;
+    info.style.border = '1px solid ' + border;
+    info.style.color = color;
+  }
+
+  setInfo('⟳ Connessione al foglio...', 'loading');
+
+  // Timeout di 8 secondi — se non risponde, accesso offline
+  let res = null;
+  try {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 8000)
+    );
+    res = await Promise.race([
+      gsPost('loginUtente', { email: email, password: pwd }),
+      timeoutPromise
+    ]);
+  } catch(e) {
+    res = null; // timeout o errore rete
+  }
+
+  if (res && res.ok) {
+    // LOGIN OK
+    const profilo = res;
+    setUtenteId(profilo.utente_id);
+    localStorage.setItem('irun_profilo_remoto', JSON.stringify(profilo));
+    renderNavUser();
+    closeLoginModal();
+    showPage('home');
+    renderHome();
+    renderProfilo();
+    showToast('Benvenuto ' + (profilo.nome || profilo.utente_id || '') + '! 👋');
+    syncFromSheet().then(() => {
+      renderHome();
+      if (currentPage === 'gare')    renderGare('tutte');
+      if (currentPage === 'mappa')   renderMappa();
+      if (currentPage === 'profilo') renderProfilo();
+      if (currentPage === 'stats')   renderStats();
+    });
+    // Carica utenti e gare community in background
+    setTimeout(async () => {
+      await caricaUtentiCache();
+      await caricaGareCache();
+    }, 2000);
+
+  } else if (res && res.error) {
+    // ERRORE CREDENZIALI — rimane aperto
+    setInfo('✗ ' + res.error, 'err');
+
+  } else {
+    // FOGLIO NON RAGGIUNGIBILE — accesso offline con email come uid temporaneo
+    setInfo('⚠ Foglio non raggiungibile. Accesso in modalità offline.', 'err');
+    setTimeout(() => {
+      setUtenteId(email);
+      renderNavUser();
+      closeLoginModal();
+      showPage('home');
+      renderHome();
+      showToast('Accesso offline — le gare saranno sincronizzate appena possibile');
+    }, 2000);
+  }
+}
+
+async function confermaRegistrazione() {
+  const nome    = document.getElementById('reg-nome').value.trim();
+  const cognome = document.getElementById('reg-cognome').value.trim();
+  const email   = document.getElementById('reg-email').value.trim();
+  const pwd     = document.getElementById('reg-pwd').value;
+  const pwd2    = document.getElementById('reg-pwd2').value;
+  const info    = document.getElementById('reg-info');
+
+  if (!nome)    { mostraInfoReg('Inserisci il nome', 'err', info); return; }
+  if (!cognome) { mostraInfoReg('Inserisci il cognome', 'err', info); return; }
+  if (!email)   { mostraInfoReg('Inserisci la email', 'err', info); return; }
+  if (!pwd)     { mostraInfoReg('Inserisci una password', 'err', info); return; }
+  if (pwd.length < 6) { mostraInfoReg('Password troppo corta (min. 6 caratteri)', 'err', info); return; }
+  if (pwd !== pwd2) { mostraInfoReg('Le password non corrispondono', 'err', info); return; }
+
+  const uid = (nome + cognome).toLowerCase().replace(/\s/g,'') + '_' + Date.now().toString().slice(-4);
+  const profilo = document.querySelector('input[name="reg-profilo"]:checked');
+  const sportPref   = (document.getElementById('reg-sport').value   || '').trim();
+  const dataNascita = (document.getElementById('reg-nascita').value || '').trim();
+  const sessoVal    = (document.getElementById('reg-sesso').value   || '').trim();
+  const pesoVal     = (document.getElementById('reg-peso').value    || '').trim();
+  const profiloVal  = profilo ? profilo.value : 'pubblico';
+
+  const utente = {
+    utente_id:        uid,
+    nome:             nome,
+    cognome:          cognome,
+    email:            email,
+    data_nascita:     dataNascita,
+    sesso:            sessoVal,
+    peso:             pesoVal,
+    sport_preferito:  sportPref,
+    profilo_pubblico: profiloVal === 'pubblico',
+    profilo:          profiloVal === 'pubblico' ? 'PUBBLICO' : 'PRIVATO',
+    password:         pwd,
+  };
+  console.log('Registrazione utente:', JSON.stringify({...utente, password:'[hidden]'}));
+
+  mostraInfoReg('⟳ Creazione account...', 'loading', info);
+  const res = await gsPost('registraUtente', utente);
+  if (res && res.created) {
+    mostraInfoReg('✓ Account creato! Ora accedi con la tua email.', 'ok', info);
+    setTimeout(() => {
+      // Passa email direttamente — NON chiamare openLoginModal che svuoterebbe il campo
+      switchAuthTab('login');
+      document.getElementById('login-uid').value = email;
+      document.getElementById('login-pwd').value = '';
+      // Svuota info registrazione
+      document.getElementById('reg-info').style.display = 'none';
+    }, 1500);
+  } else if (res && res.error) {
+    mostraInfoReg('✗ ' + res.error, 'err', info);
+  } else {
+    mostraInfoReg('✗ Errore nella registrazione. Riprova.', 'err', info);
+  }
+}
+
+function mostraInfoReg(msg, tipo, el) {
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  if (tipo === 'err') {
+    el.style.background = 'rgba(244,67,54,0.08)'; el.style.border = '1px solid rgba(244,67,54,0.25)'; el.style.color = '#ef9a9a';
+  } else if (tipo === 'ok') {
+    el.style.background = 'rgba(76,175,80,0.08)'; el.style.border = '1px solid rgba(76,175,80,0.25)'; el.style.color = '#81c784';
+  } else {
+    el.style.background = 'rgba(255,193,7,0.08)'; el.style.border = '1px solid rgba(255,193,7,0.25)'; el.style.color = 'var(--text2)';
+  }
+}
+
+function renderNavUser() {
+  const uid = getUtenteId();
+  const initials = uid ? uid.slice(0,2).toUpperCase() : '?';
+  const el = document.getElementById('nav-initials');
+  if (el) el.textContent = initials;
+  const avatar = document.getElementById('nav-avatar');
+  if (avatar) avatar.style.background = uid
+    ? 'linear-gradient(135deg,var(--accent),var(--accent2))'
+    : 'var(--bg4)';
+}
+
+// ============ INIT ============
+async function init() {
+  renderNavUser();
+
+  // Usa subito i default locali — il sito si apre immediatamente
+  usaConfigDefault();
+
+  // Carica cache configurazione se disponibile
+  const cached = getCachedConfig();
+  if (cached && cached.sport && cached.sport.length) {
+    setConfig(cached);
+    console.log('Config da cache:', cached.sport);
+  }
+
+  const uid = getUtenteId();
+
+  if (!uid) {
+    renderHome();
+    renderProgramma();
+    setTimeout(openLoginModal, 600);
+  } else {
+    // Render immediato con dati locali
+    renderHome();
+    renderProgramma();
+
+    // Poi in background: carica config aggiornata + gare
+    Promise.allSettled([
+      caricaConfigurazione(),
+      syncFromSheet()
+    ]).then(() => {
+      renderHome();
+      renderProgramma();
+      if (currentPage === 'gare')    renderGare('tutte');
+      if (currentPage === 'mappa')   renderMappa();
+      if (currentPage === 'profilo') renderProfilo();
+      if (currentPage === 'stats')   renderStats();
+    });
+  }
+}
+
+init();
+</script>
+
+<!-- D3 + Mappa Italia -->
+<script>
+// Mappa SVG pura — nessuna dipendenza esterna
+
+function regioneColorSVG(n) {
+  if (n >= 10) return '#ff5722';
+  if (n >= 5)  return '#ff8a65';
+  if (n >= 2)  return '#ffccbc';
+  if (n >= 1)  return 'rgba(255,87,34,0.4)';
+  return '#1c1c1c';
+}
+
+function updateMapColors() {
+  const gare = getGare();
+  const regioniMap = {};
+  gare.forEach(g => {
+    if (g.regione && g.regione !== 'Estero') {
+      if (!regioniMap[g.regione]) regioniMap[g.regione] = [];
+      regioniMap[g.regione].push(g);
+    }
+  });
+
+  const tooltip = document.getElementById('map-tooltip');
+
+  document.querySelectorAll('#italy-svg .reg-d3').forEach(path => {
+    const regName = path.dataset.region;
+    const gs = regioniMap[regName] || [];
+    const color = regioneColorSVG(gs.length);
+
+    path.style.fill = color;
+    path.style.stroke = '#0a0a0a';
+    path.style.strokeWidth = '0.8';
+    path.style.cursor = gs.length ? 'pointer' : 'default';
+    path.style.transition = 'fill 0.2s, opacity 0.15s';
+
+    path.onmouseenter = function(e) {
+      if (gs.length > 0) {
+        path.style.filter = 'url(#reg-glow)';
+        path.style.opacity = '0.85';
+      }
+      if (!tooltip) return;
+      if (!gs.length) {
+        tooltip.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${regName}</div><div style="color:var(--text3);font-size:12px;">Nessuna gara ancora</div>`;
+      } else {
+        const kmR = gs.reduce((s,g) => s+(g.distanza||0), 0);
+        const list = gs.slice(0,5).map(g => {
+          const t = g.frazioni ? calcTempoTri(g.frazioni) : (g.tempo||'');
+          return `<div style="font-size:11px;color:var(--text3);margin-top:3px;">${g.data.slice(0,4)} · ${g.nome}${t?' · <span style=color:#ff8a65>'+t+'</span>':''}</div>`;
+        }).join('');
+        const more = gs.length > 5 ? `<div style="font-size:11px;color:var(--accent);margin-top:3px;">+${gs.length-5} altre gare</div>` : '';
+        tooltip.innerHTML = `
+          <div style="font-weight:600;font-size:14px;margin-bottom:5px;">${regName}</div>
+          <div style="color:var(--accent);font-weight:600;margin-bottom:4px;">${gs.length} gar${gs.length===1?'a':'e'} · ${Math.round(kmR)} km</div>
+          ${list}${more}`;
+      }
+      const box = document.getElementById('italy-map-container').getBoundingClientRect();
+      let tx = e.clientX - box.left + 14;
+      let ty = e.clientY - box.top + 14;
+      if (tx + 230 > box.width) tx -= 245;
+      if (ty + 170 > box.height) ty -= 175;
+      tooltip.style.left = Math.max(0,tx) + 'px';
+      tooltip.style.top = Math.max(0,ty) + 'px';
+      tooltip.style.opacity = '1';
+    };
+
+    path.onmouseleave = function() {
+      path.style.filter = '';
+      path.style.opacity = '1';
+      if (tooltip) tooltip.style.opacity = '0';
+    };
+  });
+}
+
+function loadMap() {
+  // SVG già nel DOM — aggiorna solo i colori
+  updateMapColors();
+}
+</script>
+</body>
+</html>
