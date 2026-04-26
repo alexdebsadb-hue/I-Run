@@ -658,6 +658,7 @@
       <div id="login-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
       <div class="form-actions" style="margin-top:20px;">
         <button class="btn-secondary" id="login-cancel-btn" onclick="closeLoginModal()" style="display:none;">Annulla</button>
+        <button class="btn-secondary" id="login-logoff-btn" onclick="logoff()" style="display:none;color:#ef9a9a;">← Esci dall'account</button>
         <button class="btn-primary" onclick="confermaLogin()" style="flex:1;">Accedi</button>
       </div>
     </div>
@@ -700,19 +701,54 @@
         </div>
   
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Sport preferito</label>
+          <input class="form-input" id="reg-sport" placeholder="es. Corsa, Trail..." list="reg-sport-list" autocomplete="off" />
+          <datalist id="reg-sport-list">
+            <option value="Corsa"><option value="Triathlon"><option value="Trail">
+            <option value="Ultra"><option value="Bici"><option value="Nuoto">
+            <option value="Duathlon"><option value="Ironman">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Città</label>
+          <input class="form-input" id="reg-citta" placeholder="es. Roma" />
+        </div>
+      </div>
       <div class="form-group">
-        <label class="form-label">Sport preferito</label>
-        <input class="form-input" id="reg-sport" placeholder="es. Corsa, Triathlon, Trail..." list="reg-sport-list" autocomplete="off" />
-        <datalist id="reg-sport-list">
-          <option value="Corsa">
-          <option value="Triathlon">
-          <option value="Trail">
-          <option value="Ultra">
-          <option value="Bici">
-          <option value="Nuoto">
-          <option value="Duathlon">
-          <option value="Ironman">
-        </datalist>
+        <label class="form-label">Regione</label>
+        <select class="form-select" id="reg-regione">
+          <option value="">Seleziona regione...</option>
+          <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+          <option>Campania</option><option>Emilia-Romagna</option>
+          <option>Friuli-Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+          <option>Lombardia</option><option>Marche</option><option>Molise</option>
+          <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
+          <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
+          <option>Umbria</option><option>Valle d&#39;Aosta</option><option>Veneto</option>
+          <option>Estero</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Città</label>
+          <input class="form-input" id="reg-citta" placeholder="es. Milano" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Regione</label>
+          <select class="form-select" id="reg-regione">
+            <option value="">Seleziona...</option>
+            <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+            <option>Campania</option><option>Emilia-Romagna</option>
+            <option>Friuli-Venezia Giulia</option><option>Lazio</option>
+            <option>Liguria</option><option>Lombardia</option><option>Marche</option>
+            <option>Molise</option><option>Piemonte</option><option>Puglia</option>
+            <option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
+            <option>Trentino-Alto Adige</option><option>Umbria</option>
+            <option>Valle d'Aosta</option><option>Veneto</option><option>Estero</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -734,6 +770,12 @@
             <input type="radio" name="reg-profilo" value="privato" /> Privato
           </label>
         </div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--text2);">
+          <input type="checkbox" id="reg-privacy" style="margin-top:2px;flex-shrink:0;" />
+          <span>Ho letto e accetto la <a href="#" onclick="apriPrivacy();return false;" style="color:var(--accent);text-decoration:none;">Privacy Policy</a> e i <a href="#" onclick="apriPrivacy();return false;" style="color:var(--accent);text-decoration:none;">Termini di servizio</a> di I-Run. Acconsento al trattamento dei dati personali per la gestione del profilo e delle gare.</span>
+        </label>
       </div>
       <div id="reg-info" style="display:none;border-radius:8px;padding:12px;font-size:13px;margin-top:12px;"></div>
       <div class="form-actions" style="margin-top:20px;">
@@ -808,7 +850,12 @@
           <div id="profile-sport" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <button class="btn-secondary" onclick="editProfile()" style="flex-shrink:0;">Modifica profilo</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-secondary" onclick="editProfile()">Modifica profilo</button>
+          <button class="btn-secondary" onclick="resetPassword()" style="color:var(--accent2);">🔑 Reset password</button>
+          <button class="btn-secondary" onclick="connettGarmin()" title="Collegamento Garmin — prossimamente" style="opacity:0.7;">⌚ Garmin</button>
+          <button class="btn-secondary" onclick="logoff()" style="color:#ef9a9a;">← Esci</button>
+        </div>
           <div id="profile-visibility" style="font-size:12px;color:var(--text3);"></div>
           <div id="profile-email" style="font-size:12px;color:var(--text3);"></div>
         </div>
@@ -1434,6 +1481,26 @@
   </div>
 </div>
 
+<!-- PRIVACY MODAL -->
+<div class="form-overlay" id="privacy-overlay" onclick="if(event.target===this)document.getElementById('privacy-overlay').classList.remove('open')">
+  <div class="form-box" style="max-width:600px;max-height:80vh;overflow-y:auto;">
+    <div class="form-title">Privacy Policy & <span>Termini</span></div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+      <p><strong>I-Run</strong> è una piattaforma personale per il tracciamento delle attività sportive e delle gare.</p>
+      <p><strong>Dati raccolti:</strong> nome, cognome, email, data di nascita, sesso, peso, sport preferito, gare e risultati inseriti dall'utente.</p>
+      <p><strong>Utilizzo dei dati:</strong> i dati vengono utilizzati esclusivamente per fornire le funzionalità del servizio (storico gare, statistiche, profilo). Non vengono venduti né ceduti a terzi.</p>
+      <p><strong>Archiviazione:</strong> i dati sono conservati su Google Sheets, soggetto alla <a href="https://policies.google.com/privacy" target="_blank" style="color:var(--accent);">Privacy Policy di Google</a>.</p>
+      <p><strong>Profilo pubblico/privato:</strong> se imposti il profilo come pubblico, nome, sport e gare saranno visibili agli altri utenti registrati. Se lo imposti come privato, saranno visibili solo le tue recensioni.</p>
+      <p><strong>Diritti:</strong> puoi modificare o eliminare il tuo profilo e i tuoi dati in qualsiasi momento dalla sezione "Il mio profilo".</p>
+      <p><strong>Contatti:</strong> per qualsiasi richiesta relativa ai dati personali, contatta l'amministratore del servizio.</p>
+      <p style="color:var(--text3);font-size:12px;">Versione 1.0 — I-Run</p>
+    </div>
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn-primary" onclick="document.getElementById('privacy-overlay').classList.remove('open');document.getElementById('reg-privacy').checked=true;" style="flex:1;">Ho letto — Accetto</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODIFICA PROFILO MODAL -->
 <div class="form-overlay" id="edit-profile-overlay" onclick="if(event.target===this)closeEditProfile()">
   <div class="form-box" style="max-width:500px;">
@@ -1476,8 +1543,48 @@
       </div>
       <div class="form-row">
         <div class="form-group">
+          <label class="form-label">Città</label>
+          <input class="form-input" id="ep-citta" placeholder="es. Milano" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Regione</label>
+          <select class="form-select" id="ep-regione">
+            <option value="">Seleziona...</option>
+            <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+            <option>Campania</option><option>Emilia-Romagna</option>
+            <option>Friuli-Venezia Giulia</option><option>Lazio</option>
+            <option>Liguria</option><option>Lombardia</option><option>Marche</option>
+            <option>Molise</option><option>Piemonte</option><option>Puglia</option>
+            <option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
+            <option>Trentino-Alto Adige</option><option>Umbria</option>
+            <option>Valle d'Aosta</option><option>Veneto</option><option>Estero</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
           <label class="form-label">Sport preferito</label>
           <input class="form-input" id="ep-sport" placeholder="es. Corsa" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Città</label>
+          <input class="form-input" id="ep-citta" placeholder="es. Roma" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Regione</label>
+          <select class="form-select" id="ep-regione">
+            <option value="">Seleziona...</option>
+            <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+            <option>Campania</option><option>Emilia-Romagna</option>
+            <option>Friuli-Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+            <option>Lombardia</option><option>Marche</option><option>Molise</option>
+            <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
+            <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
+            <option>Umbria</option><option>Valle d&#39;Aosta</option><option>Veneto</option>
+            <option>Estero</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Visibilità profilo</label>
@@ -1503,6 +1610,7 @@
 let currentPage = 'home';
 let selectedSport = 'corsa';
 let selectedSportP = 'corsa';
+let _archiviandoProgrammaId = null; // id gara in programma in fase di archiviazione
 const ratings = { percorso:0, ristori:0, organizzazione:0, posizione:0, pulizia:0, colazione:0 };
 
 // Configurazione caricata dal foglio Google
@@ -1527,7 +1635,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbzYKyhoW1aU41W124JFfxXq0KFEbuKhfB9Kio_LcaW9FDImZ3ZzbzZbKcdGSzWY6Kst/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -1783,8 +1891,8 @@ function usaConfigDefault() {
       'ultra':      ['Ultra 50 km','30 km','50 km','100 km'],
       'bici':       ['30 km','50 km','100 km'],
       'nuoto':      ['1 km','2 km','5 km','10 km'],
-      'triathlon':  ['Triathlon Sprint (23,25 km)','Triathlon Olimpico (51,5 km)'],
-      'duathlon':   ['Duathlon classico'],
+      'triathlon':  ['Sprint (750m/20km/5km)','Olimpico (1,5km/40km/10km)','Middle (1,9km/90km/21km)','Long (3,8km/180km/42km)'],
+      'duathlon':   ['Duathlon Sprint','Duathlon Classico','Duathlon Long'],
       'ironman':    ['70.3 Ironman (113 km)','140.6 Ironman (226 km)'],
       'tri703':     ['70.3 Ironman (113 km)'],
     }
@@ -1938,7 +2046,7 @@ function sportIcon(s) {
 }
 function sportLabel(s) {
   const labels = {
-    corsa:'Corsa', triathlon:'Triathlon Olimpico', tri703:'70.3',
+    corsa:'Corsa', triathlon:'Triathlon', tri703:'70.3',
     ironman:'Ironman', duathlon:'Duathlon', ultra:'Ultra', trail:'Trail', bici:'Bici', nuoto:'Nuoto'
   };
   return labels[s] || s;
@@ -2105,10 +2213,19 @@ function salvaGara() {
   saveGare(gare);
   closeForm();
   showToast(isEdit ? 'Gara aggiornata! ✅' : 'Gara salvata! 🎉');
+  // Se stavamo archiviando una gara in programma, rimuovila ora
+  if (_archiviandoProgrammaId) {
+    const pid = _archiviandoProgrammaId;
+    _archiviandoProgrammaId = null;
+    let prog = getProgramma();
+    prog = prog.filter(g => g.id !== pid);
+    saveProgramma(prog);
+    renderProgramma();
+    if (getUtenteId()) gsPost('deleteProgramma', { id: pid, utente_id: getUtenteId() }).catch(()=>{});
+  }
   renderHome();
   if (currentPage === 'gare') renderGare('tutte');
   if (currentPage === 'mappa') renderMappa();
-  // Sync al foglio in background
   if (getUtenteId()) {
     const action = isEdit ? 'updateGara' : 'saveGara';
     gsPost(action, gara).then(r => { if (r) showSyncBadge('ok'); });
@@ -2541,7 +2658,7 @@ function renderStats() {
         ]
       },
       options: { ...CHART_DEFAULTS,
-        scales: { ...CHART_DEFAULTS.scales, x: { ...CHART_DEFAULTS.scales.x, stacked: true }, y: { ...CHART_DEFAULTS.scales.y, stacked: true } },
+        scales: { ...CHART_DEFAULTS.scales, x: { ...CHART_DEFAULTS.scales.x, stacked: true, ticks: { ...CHART_DEFAULTS.scales.x.ticks, ...CHART_TICK_OPTS } }, y: { ...CHART_DEFAULTS.scales.y, stacked: true } },
         plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, labels: { color: CHART_COLORS.text, font: { size: 12 } } } }
       }
     });
@@ -2846,6 +2963,10 @@ function renderProfilo(profiloEsterno) {
 
   // Meta principale: data nascita, sesso, peso
   const metaParts = [];
+  if (profilo.citta || profilo.regione) {
+    const luogo = [profilo.citta, profilo.regione].filter(Boolean).join(', ');
+    metaParts.push('📍 ' + luogo);
+  }
   if (profilo.data_nascita) metaParts.push('🎂 ' + fmtDataIT(profilo.data_nascita));
   if (profilo.sesso)        metaParts.push(profilo.sesso === 'M' ? '♂ Uomo' : profilo.sesso === 'F' ? '♀ Donna' : profilo.sesso);
   if (profilo.peso)         metaParts.push('⚖️ ' + profilo.peso + ' kg');
@@ -2925,11 +3046,51 @@ function editProfile() {
   document.getElementById('ep-sesso').value        = p.sesso       || '';
   document.getElementById('ep-peso').value         = p.peso        || '';
   document.getElementById('ep-sport').value        = p.sport_preferito || '';
+  document.getElementById('ep-citta').value        = p.citta    || '';
+  document.getElementById('ep-regione').value      = p.regione  || '';
   document.getElementById('ep-profilo').value      = p.profilo === 'PRIVATO' ? 'PRIVATO' : 'PUBBLICO';
+}
+
+function apriPrivacy() {
+  document.getElementById('privacy-overlay').classList.add('open');
 }
 
 function closeEditProfile() {
   document.getElementById('edit-profile-overlay').classList.remove('open');
+}
+
+function connettGarmin() {
+  showToast('⌚ Collegamento Garmin — funzionalità in arrivo nella prossima versione!');
+}
+
+function logoff() {
+  if (!confirm('Vuoi uscire dal tuo account?')) return;
+  localStorage.removeItem('irun_utente_id');
+  localStorage.removeItem('irun_profilo_remoto');
+  localStorage.removeItem('irun_gare');
+  localStorage.removeItem('irun_programma');
+  _utentiCache = [];
+  _gareCache   = [];
+  renderNavUser();
+  showPage('home');
+  renderHome();
+  showToast('Sei uscito dal tuo account');
+  setTimeout(openLoginModal, 800);
+}
+
+function resetPassword() {
+  const uid = getUtenteId();
+  if (!uid) return;
+  const nuovaPwd = prompt('Inserisci la nuova password (min. 6 caratteri):');
+  if (!nuovaPwd) return;
+  if (nuovaPwd.length < 6) { alert('Password troppo corta (min. 6 caratteri)'); return; }
+  const conferma = prompt('Conferma la nuova password:');
+  if (nuovaPwd !== conferma) { alert('Le password non corrispondono'); return; }
+  gsPost('aggiornaUtente', { utente_id: uid, password: nuovaPwd.trim() }).then(res => {
+    if (res && res.updated) showToast('✅ Password aggiornata!');
+    else if (res && res.error) showToast('✗ ' + res.error);
+    else showToast('⚠️ Impossibile aggiornare — riprova');
+  });
 }
 
 async function salvaProfiloModificato() {
@@ -2945,6 +3106,8 @@ async function salvaProfiloModificato() {
     sesso:          document.getElementById('ep-sesso').value,
     peso:           document.getElementById('ep-peso').value,
     sport_preferito:document.getElementById('ep-sport').value.trim(),
+    citta:          document.getElementById('ep-citta').value.trim(),
+    regione:        document.getElementById('ep-regione').value,
     profilo_pubblico: document.getElementById('ep-profilo').value !== 'PRIVATO',
     profilo:        document.getElementById('ep-profilo').value,
   };
@@ -4213,6 +4376,12 @@ const CHART_COLORS = {
   text: '#888888',
 };
 
+const CHART_TICK_OPTS = {
+  maxRotation: 45,
+  minRotation: 0,
+  autoSkip: true,
+  maxTicksLimit: 12,
+};
 const CHART_DEFAULTS = {
   responsive: true,
   maintainAspectRatio: true,
@@ -4602,6 +4771,8 @@ function openLoginModal(prefilEmail) {
     : 'Accedi a <span>I-Run</span>';
   const cancelBtn = document.getElementById('login-cancel-btn');
   if (cancelBtn) cancelBtn.style.display = uid ? 'block' : 'none';
+  const logoffBtn = document.getElementById('login-logoff-btn');
+  if (logoffBtn) logoffBtn.style.display = uid ? 'block' : 'none';
   const info = document.getElementById('login-info');
   if (info) { info.style.display = 'none'; info.textContent = ''; }
   document.getElementById('login-overlay').classList.add('open');
@@ -4638,7 +4809,7 @@ function switchAuthTab(tab) {
 
 async function confermaLogin() {
   const email = document.getElementById('login-uid').value.trim();
-  const pwd   = document.getElementById('login-pwd').value;
+  const pwd   = document.getElementById('login-pwd').value.trim();
   if (!email) { alert('Inserisci la tua email'); return; }
 
   const info = document.getElementById('login-info');
@@ -4722,6 +4893,8 @@ async function confermaRegistrazione() {
   const pwd2    = document.getElementById('reg-pwd2').value;
   const info    = document.getElementById('reg-info');
 
+  const privacyOk = document.getElementById('reg-privacy')?.checked;
+  if (!privacyOk) { mostraInfoReg('Devi accettare la Privacy Policy per procedere', 'err', info); return; }
   if (!nome)    { mostraInfoReg('Inserisci il nome', 'err', info); return; }
   if (!cognome) { mostraInfoReg('Inserisci il cognome', 'err', info); return; }
   if (!email)   { mostraInfoReg('Inserisci la email', 'err', info); return; }
@@ -4735,6 +4908,8 @@ async function confermaRegistrazione() {
   const dataNascita = (document.getElementById('reg-nascita').value || '').trim();
   const sessoVal    = (document.getElementById('reg-sesso').value   || '').trim();
   const pesoVal     = (document.getElementById('reg-peso').value    || '').trim();
+  const cittaVal    = (document.getElementById('reg-citta').value   || '').trim();
+  const regioneVal  = (document.getElementById('reg-regione').value || '').trim();
   const profiloVal  = profilo ? profilo.value : 'pubblico';
 
   const utente = {
@@ -4749,6 +4924,8 @@ async function confermaRegistrazione() {
     profilo_pubblico: profiloVal === 'pubblico',
     profilo:          profiloVal === 'pubblico' ? 'PUBBLICO' : 'PRIVATO',
     password:         pwd,
+    citta:            cittaVal,
+    regione:          regioneVal,
   };
   console.log('Registrazione utente:', JSON.stringify({...utente, password:'[hidden]'}));
 
