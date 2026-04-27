@@ -1668,7 +1668,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwGWsm2U2QabL8Zc56TrvQ7tCXlUC-UVuxXsFBBlXa-0WQdmIl_AqgSUBad78HKKpmg/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -3239,9 +3239,24 @@ async function salvaProfiloModificato() {
 }
 
 // ============ RENDER PROGRAMMA ============
-function renderProgramma() {
-  const lista = getProgramma();
+async function renderProgramma() {
   const cont = document.getElementById('programma-list');
+  if (!cont) return;
+  const uid = getUtenteId();
+
+  // Mostra loading
+  cont.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text3);">
+    <div style="font-size:32px;margin-bottom:8px;">⏳</div>Caricamento dal foglio...</div>`;
+
+  // Carica SEMPRE dal foglio Google (fonte di verità)
+  if (uid) {
+    const prog = await gsGet({ action: 'getProgramma' });
+    if (Array.isArray(prog)) {
+      saveProgramma(prog.map(g => ({ ...g, data: normalizzaData(g.data) })));
+    }
+  }
+
+  const lista = getProgramma();
   if (!lista.length) {
     cont.innerHTML = `<div class="empty-state">
       <div class="empty-icon">📅</div>
@@ -3323,53 +3338,75 @@ function sposta2Gare(id) {
   showToast('Completa il risultato e salva! 🏅');
 }
 
+// Debounce timer per la ricerca
+let _searchTimer = null;
+
 function onGlobalSearch(q) {
   const dd  = document.getElementById('search-dropdown');
   const clr = document.getElementById('search-clear');
   if (clr) clr.style.display = q ? 'block' : 'none';
   if (!q || q.length < 2) { dd.style.display = 'none'; return; }
 
+  // Debounce: aspetta 400ms prima di cercare
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => _eseguiRicerca(q), 400);
+}
+
+async function _eseguiRicerca(q) {
+  const dd = document.getElementById('search-dropdown');
+  if (!dd) return;
   const ql = q.toLowerCase();
 
-  // ── Risultati UTENTI (dalla cache) ──
-  const uFound = _utentiCache.filter(u => {
-    const nomeCompleto = ((u.nome||'')+' '+(u.cognome||'')).toLowerCase();
-    return nomeCompleto.includes(ql) || (u.sport_preferito||'').toLowerCase().includes(ql);
-  }).filter(u => u.utente_id !== getUtenteId()).slice(0, 4);
+  // Mostra loading
+  dd.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text3);font-size:13px;">
+    <span style="font-size:20px;">⏳</span> Ricerca in corso...</div>`;
+  dd.style.display = 'block';
 
-  // ── Risultati GARE (mie + cache pubblica) ──
-  // Mie gare (da localStorage)
+  // ── Mie gare (da localStorage — istantaneo) ──
   const mieGare = getGare().filter(g =>
     (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
     (g.luogo||'').toLowerCase().includes(ql) ||
     (g.regione||'').toLowerCase().includes(ql) ||
     (g.sport||'').toLowerCase().includes(ql)
-  ).slice(0, 4).map(g => ({ ...g, _isMia: true }));
+  ).slice(0, 5).map(g => ({ ...g, _isMia: true }));
 
-  // Gare pubbliche (dalla cache)
-  const gareAltrui = _gareCache.filter(g =>
-    g._autore && g._autore.utente_id !== getUtenteId() && (
-      (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
-      (g.luogo||'').toLowerCase().includes(ql) ||
-      (g.regione||'').toLowerCase().includes(ql) ||
-      (g.sport||'').toLowerCase().includes(ql)
-    )
-  );
-
-  // Aggrega gare altrui per gara (nome+luogo) con media voti
+  // ── Utenti: cerca nel foglio UTENTI per nome/cognome ──
+  const uFound = [];
+  const gareAltrui = [];
   const aggGare = {};
-  gareAltrui.forEach(g => {
-    const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
-    if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, hasRating: false, recensioni: [] };
-    aggGare[k].count++;
-    const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
-    if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].hasRating = true; aggGare[k].recensioni.push(g); }
-  });
-  const gPubliche = Object.values(aggGare)
-    .sort((a,b) => b.count - a.count)
-    .slice(0, 5);
 
+  try {
+    // Cerca utenti nel foglio
+    const tuttiUtenti = await gsGet({ action: 'getAllUtenti' });
+    if (Array.isArray(tuttiUtenti)) {
+      const uid = getUtenteId();
+      tuttiUtenti.filter(u => u.utente_id !== uid).forEach(u => {
+        const nomeCompleto = ((u.nome||'')+' '+(u.cognome||'')).toLowerCase();
+        if (nomeCompleto.includes(ql) || (u.sport_preferito||'').toLowerCase().includes(ql)) {
+          uFound.push(u);
+        }
+      });
+    }
+
+    // Cerca gare nel foglio di TUTTI gli utenti per città
+    // Usa endpoint speciale che cerca per città su tutti gli utenti
+    const gareMatch = await gsGet({ action: 'cercaGarePerCitta', q: q });
+    if (Array.isArray(gareMatch)) {
+      gareMatch.forEach(g => {
+        const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
+        if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, recensioni: [] };
+        aggGare[k].count++;
+        const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
+        if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].recensioni.push(g); }
+      });
+    }
+  } catch(e) {
+    console.warn('Ricerca foglio:', e.message);
+  }
+
+  const gPubliche = Object.values(aggGare).sort((a,b) => b.count - a.count).slice(0, 5);
   const hasCacheGare = _gareCache.length > 0;
+
   const hasResults   = uFound.length || mieGare.length || gPubliche.length;
 
   if (!hasResults && hasCacheGare && !uFound.length) {
@@ -5000,15 +5037,16 @@ function renderNavUser() {
 async function init() {
   renderNavUser();
 
-  // Usa subito i default locali — il sito si apre immediatamente
-  usaConfigDefault();
-
-  // Carica cache configurazione se disponibile
+  // Carica config dal foglio (await — aspettiamo prima di procedere)
   const cached = getCachedConfig();
   if (cached && cached.sport && cached.sport.length) {
     setConfig(cached);
-    console.log('Config da cache:', cached.sport);
+    console.log('Config da cache:', cached.sport, '| sport_distanze:', Object.keys(cached.sport_distanze||{}));
   }
+  // Carica sempre la config fresca in background
+  caricaConfigurazione().then(() => {
+    console.log('Config aggiornata dal foglio:', Object.keys(getConfig().sport_distanze||{}));
+  });
 
   const uid = getUtenteId();
 
