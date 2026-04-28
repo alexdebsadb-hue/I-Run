@@ -1946,6 +1946,14 @@ function popolaSelectConfig() {
   if (rSportList) {
     rSportList.innerHTML = (c.sport || []).map(s => `<option value="${s}">`).join('');
   }
+  // Regione nel form registrazione
+  const regRegSel = document.getElementById('reg-regione');
+  if (regRegSel) {
+    regRegSel.innerHTML = '<option value="">Seleziona regione...</option>';
+    (c.regioni||[]).forEach(r => {
+      const o = document.createElement('option'); o.value = r; o.textContent = r; regRegSel.appendChild(o);
+    });
+  }
 }
 
 const REGIONI_DEFAULT = []; // Dati dal foglio Google
@@ -4790,13 +4798,8 @@ function switchAuthTab(tab) {
     tReg.style.borderBottomColor = 'var(--accent)';
     tReg.style.color = 'var(--accent)';
     tReg.style.fontWeight = '600';
-    // Assicura config dal foglio prima di popolare
-    const cfgReg = getConfig();
-    if (!cfgReg.regioni || !cfgReg.regioni.length) {
-      caricaConfigurazione().then(popolaSelectConfig);
-    } else {
-      popolaSelectConfig();
-    }
+    // Carica sempre config aggiornata dal foglio quando si apre registrazione
+    caricaConfigurazione().then(popolaSelectConfig);
 
   } else if (tab === 'reset') {
     if (resetF) resetF.style.display = 'block';
@@ -4915,20 +4918,24 @@ async function confermaRegistrazione() {
   const regioneVal  = (document.getElementById('reg-regione').value || '').trim();
   const profiloVal  = profilo ? profilo.value : 'pubblico';
 
+  const tsConsenso = document.getElementById('reg-timestamp-consenso').value
+    || new Date().toISOString();
+
   const utente = {
-    utente_id:        uid,
-    nome:             nome,
-    cognome:          cognome,
-    email:            email,
-    data_nascita:     dataNascita,
-    sesso:            sessoVal,
-    peso:             pesoVal,
-    sport_preferito:  sportPref,
-    profilo_pubblico: profiloVal === 'pubblico',
-    profilo:          profiloVal === 'pubblico' ? 'PUBBLICO' : 'PRIVATO',
-    password:         pwd,
-    citta:            cittaVal,
-    regione:          regioneVal,
+    utente_id:           uid,
+    nome:                nome,
+    cognome:             cognome,
+    email:               email,
+    data_nascita:        dataNascita,
+    sesso:               sessoVal,
+    peso:                pesoVal,
+    sport_preferito:     sportPref,
+    profilo_pubblico:    profiloVal === 'pubblico',
+    profilo:             profiloVal === 'pubblico' ? 'PUBBLICO' : 'PRIVATO',
+    password:            pwd,
+    citta:               cittaVal,
+    regione:             regioneVal,
+    timestamp_consenso:  tsConsenso,
   };
 
   mostraInfoReg('⟳ Creazione account...', 'loading', info);
