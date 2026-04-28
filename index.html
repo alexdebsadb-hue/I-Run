@@ -3611,13 +3611,11 @@ async function apriProfiloPubblico(uid) {
   // Carica le sue gare pubbliche
   document.getElementById('pp-body').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">⟳ Caricamento gare...</div>';
 
-  const gare = await gsGet({ action: 'getGare', utente_id: uid });
-  if (!Array.isArray(gare) || !gare.length) {
+  if (!gareUtente.length) {
     document.getElementById('pp-body').innerHTML = '<div style="padding:20px;color:var(--text3);text-align:center;">Nessuna gara pubblica</div>';
     return;
   }
-
-  const gareNorm = gare.map(normalizzaGara).sort((a,b) => String(b.data||'').localeCompare(String(a.data||'')));
+  const gareNorm = gareUtente;
   const stats = {
     tot: gareNorm.length,
     km:  Math.round(gareNorm.reduce((s,g) => s+(g.distanza||0), 0)),
