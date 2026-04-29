@@ -3362,12 +3362,7 @@ async function _eseguiRicerca(q) {
   if (!dd) return;
   const ql = q.toLowerCase();
 
-  // Mostra loading
-  dd.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text3);font-size:13px;">
-    <span style="font-size:20px;">⏳</span> Ricerca in corso...</div>`;
-  dd.style.display = 'block';
-
-  // ── Mie gare (da localStorage — istantaneo) ──
+  // ── Mie gare (da localStorage — istantaneo, nessun fetch) ──
   const mieGare = getGare().filter(g =>
     (g.nome||g.tipo_gara||'').toLowerCase().includes(ql) ||
     (g.luogo||'').toLowerCase().includes(ql) ||
@@ -3375,47 +3370,50 @@ async function _eseguiRicerca(q) {
     (g.sport||'').toLowerCase().includes(ql)
   ).slice(0, 5).map(g => ({ ...g, _isMia: true }));
 
-  // ── Utenti: cerca nel foglio UTENTI per nome/cognome ──
-  const uFound = [];
-  const gareAltrui = [];
+  // Mostra subito le mie gare, poi aggiungeremo utenti e gare community
+  _renderRisultatiRicerca(q, ql, mieGare, [], [], dd, true);
+
+  // ── Fetch in parallelo: utenti e gare community ──
+  const uFound  = [];
   const aggGare = {};
 
-  try {
-    // Cerca utenti nel foglio
-    const tuttiUtenti = await gsGet({ action: 'getAllUtenti' });
-    if (Array.isArray(tuttiUtenti)) {
-      const uid = getUtenteId();
-      tuttiUtenti.filter(u => u.utente_id !== uid).forEach(u => {
-        const nome    = (u.nome    || '').toLowerCase();
-        const cognome = (u.cognome || '').toLowerCase();
-        if (nome.includes(ql) || cognome.includes(ql)) {
-          uFound.push(u);
-        }
-      });
-    }
+  const [tuttiUtenti, gareMatch] = await Promise.allSettled([
+    gsGet({ action: 'getAllUtenti' }),
+    gsGet({ action: 'cercaGarePerCitta', q: q }),
+  ]);
 
-    // Cerca gare nel foglio di TUTTI gli utenti per città
-    // Usa endpoint speciale che cerca per città su tutti gli utenti
-    const gareMatch = await gsGet({ action: 'cercaGarePerCitta', q: q });
-    if (Array.isArray(gareMatch)) {
-      gareMatch.forEach(g => {
-        const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
-        if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, recensioni: [] };
-        aggGare[k].count++;
-        const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
-        if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].recensioni.push(g); }
-      });
-    }
-  } catch(e) {
-    console.warn('Ricerca foglio:', e.message);
+  if (tuttiUtenti.status === 'fulfilled' && Array.isArray(tuttiUtenti.value)) {
+    const uid = getUtenteId();
+    tuttiUtenti.value.filter(u => u.utente_id !== uid).forEach(u => {
+      const nome    = (u.nome    || '').toLowerCase();
+      const cognome = (u.cognome || '').toLowerCase();
+      if (nome.includes(ql) || cognome.includes(ql)) uFound.push(u);
+    });
   }
 
-  const gPubliche = Object.values(aggGare).sort((a,b) => b.count - a.count).slice(0, 5);
-  const hasCacheGare = _gareCache.length > 0;
+  if (gareMatch.status === 'fulfilled' && Array.isArray(gareMatch.value)) {
+    gareMatch.value.forEach(g => {
+      const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
+      if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, recensioni: [] };
+      aggGare[k].count++;
+      const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
+      if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].recensioni.push(g); }
+    });
+  }
+
+  const gPubliche   = Object.values(aggGare).sort((a,b) => b.count - a.count).slice(0, 5);
+  const hasCacheGare = true;
 
   const hasResults   = uFound.length || mieGare.length || gPubliche.length;
 
-  if (!hasResults && hasCacheGare && !uFound.length) {
+  // Aggiorna il dropdown con tutti i risultati (inclusi utenti e gare community)
+  _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, false);
+}
+
+function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie) {
+  const hasResults = uFound.length || mieGare.length || gPubliche.length;
+
+  if (!hasResults && !soloMie) {
     dd.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
       <div style="font-size:24px;margin-bottom:6px;">🔍</div>
       Nessun risultato per "<strong>${q}</strong>"
