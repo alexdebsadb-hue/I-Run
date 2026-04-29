@@ -1670,7 +1670,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbw_54hz_vvWiCGCfGCwbMPbdPi_fkBk8aVbVAgFcVMaxR-U6oX5PpxkKjKO2Mw0v2EO/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwdllyrClurXWDqtupKyqbH471NQgjDM5Ix9WlPM67tM8yEXb16FC0Ou0Xj_OiHF-CO/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -3402,7 +3402,6 @@ async function _eseguiRicerca(q) {
   }
 
   const gPubliche   = Object.values(aggGare).sort((a,b) => b.count - a.count).slice(0, 5);
-  const hasCacheGare = true;
 
   const hasResults   = uFound.length || mieGare.length || gPubliche.length;
 
@@ -3506,15 +3505,7 @@ function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie)
     }).join('');
   }
 
-  // ── Se cache gare non ancora caricata ──
-  if (!hasCacheGare) {
-    html += `<div style="padding:10px 16px;text-align:center;border-top:1px solid var(--border);">
-      <button class="btn-secondary" style="font-size:12px;width:100%;"
-        onclick="showToast('⟳ Caricamento gare community...');caricaGareCache().then(()=>onGlobalSearch(document.getElementById('global-search').value))">
-        🌍 Cerca anche nelle gare della community
-      </button>
-    </div>`;
-  }
+
 
   if (!html) {
     html = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
