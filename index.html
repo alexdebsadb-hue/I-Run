@@ -3421,31 +3421,7 @@ function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie)
     dd.style.display = 'block';
     return;
   }
-  // Cache non ancora caricata — avvia caricamento e mostra spinner
-  if (!_utentiCache.length && !_gareCache.length) {
-    dd.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
-      <div style="font-size:28px;margin-bottom:8px;">⏳</div>
-      Caricamento dati dal foglio Google...<br>
-      <span style="font-size:11px;">La prima ricerca richiede qualche secondo</span>
-    </div>`;
-    dd.style.display = 'block';
-    // Carica e poi riesegui la ricerca automaticamente
-    caricaUtentiCache()
-      .then(() => caricaGareCache())
-      .then(() => {
-        const inp = document.getElementById('global-search');
-        if (inp && inp.value === q) onGlobalSearch(q);
-      });
-    return;
-  }
-  if (!hasResults && !hasCacheGare && !mieGare.length && !uFound.length) {
-    dd.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px;">
-      <div style="font-size:24px;margin-bottom:6px;">🔍</div>
-      Nessun risultato per "<strong>${q}</strong>"
-    </div>`;
-    dd.style.display = 'block';
-    return;
-  }
+
 
   let html = '';
 
