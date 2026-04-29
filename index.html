@@ -1603,7 +1603,11 @@
 let currentPage = 'home';
 let selectedSport = 'corsa';
 let selectedSportP = 'corsa';
-let _archiviandoProgrammaId = null; // id gara in programma in fase di archiviazione
+let _archiviandoProgrammaId = null;
+let _utentiCache = [];
+let _gareCache   = [];
+let _gareCacheTs = 0;
+let _searchTimer = null; // id gara in programma in fase di archiviazione
 const ratings = { percorso:0, ristori:0, organizzazione:0, posizione:0, pulizia:0, colazione:0 };
 
 // Configurazione caricata dal foglio Google
@@ -1630,7 +1634,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbwH-mXpHE89pyszQgh4HhskzFJnu00La-Atp6MMXVb9QGJnU9v9pBmwGHw2Bc7NBvdw/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbyulhPWlAnh_ueNDMct2GB0TtXhAeTeEKLImHixergrZYb3X468EhlIf59eSSbcQBnq/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -1832,7 +1836,6 @@ async function caricaConfigurazione() {
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
     const res = await Promise.race([fetch(url), timeout]);
     const json = await res.json();
-    console.log('Config risposta grezza:', json);
 
     // Accetta sia { ok:true, data:{...} } che { ok:false, data:{...} } che risposta diretta
     let cfg = null;
@@ -1863,7 +1866,6 @@ async function caricaConfigurazione() {
       }
       setConfig(cfg);
       setCachedConfig(cfg);
-      console.log('Config caricata:', cfg);
     } else {
       console.warn('Config: struttura non riconosciuta. Risposta:', json);
       showToast('⚠️ Configurazione non valida. Verifica il foglio CONFIGURAZIONE.');
@@ -1934,6 +1936,12 @@ function popolaSelectConfig() {
   if (rSportList) {
     rSportList.innerHTML = (c.sport || []).map(s => `<option value="${s}">`).join('');
   }
+  // Aggiorna select regione nella registrazione
+  const rRegSel = document.getElementById('reg-regione');
+  if (rRegSel && c.regioni && c.regioni.length) {
+    rRegSel.innerHTML = '<option value="">Seleziona regione...</option>'
+      + (c.regioni||[]).map(r => `<option value="${r}">${r}</option>`).join('');
+  }
 }
 
 const REGIONI_DEFAULT = []; // Dati dal foglio Google
@@ -1954,14 +1962,12 @@ function onSportChange(sport) {
   const matchKey = Object.keys(sportDistanze).find(k =>
     k.toLowerCase() === sportLower
   );
-  console.log('[sportChange] sport:', sportLower, '| chiavi disponibili:', Object.keys(sportDistanze), '| match:', matchKey);
   if (matchKey && sportDistanze[matchKey].length) {
     distanzeFiltrate = sportDistanze[matchKey];
   } else {
     // Fallback: mostra tutte le distanze
     distanzeFiltrate = c.distanze || [];
-    console.warn('[sportChange] Nessun match — mostro tutte le distanze');
-  }
+    }
 
   distanzeFiltrate.forEach(d => {
     const o = document.createElement('option'); o.value = d; o.textContent = d; fTipo.appendChild(o);
@@ -2054,15 +2060,8 @@ function openForm(garaEdit) {
   resetRatings();
   // Ricarica sempre la config se manca sport_distanze
   const c = getConfig();
-  if (!_configLoaded || !c.sport || !c.sport.length || 
-      !c.sport_distanze || Object.keys(c.sport_distanze).length === 0) {
-    caricaConfigurazione().then(() => {
-      popolaSelectConfig();
-      console.log('[openForm] Config ricaricata, sport_distanze:', Object.keys(getConfig().sport_distanze||{}));
-    });
-  } else {
-    popolaSelectConfig();
-  }
+  // Popola sempre — caricaConfigurazione è idempotente (usa cache se fresca)
+  caricaConfigurazione().then(() => popolaSelectConfig());
 
   if (isEdit) {
     // Pre-popola il form con i dati della gara
@@ -3303,7 +3302,6 @@ function sposta2Gare(id) {
 }
 
 // Debounce timer per la ricerca
-let _searchTimer = null;
 
 function onGlobalSearch(q) {
   const dd  = document.getElementById('search-dropdown');
@@ -3625,6 +3623,19 @@ async function apriProfiloPubblico(uid) {
 
 function closePublicProfile() {
   document.getElementById('public-profile-overlay').classList.remove('open');
+}
+
+async function cercaRecensioni(query) {
+  // Apri il modal e mostra le recensioni aggregate per quella gara/luogo
+  let nomeGara = query, luogoGara = '';
+  if (query.includes('_ID:')) {
+    const parts = query.split('_ID:');
+    luogoGara = parts[0];
+    nomeGara  = parts[1];
+  }
+  // Usa apriDettaglioGaraCommunity se disponibile
+  const chiave = encodeURIComponent(nomeGara + '|||' + luogoGara);
+  apriDettaglioGaraCommunity(chiave, null);
 }
 
 function renderRecensioneCard(g) {
@@ -4871,6 +4882,8 @@ async function confermaRegistrazione() {
   const cittaVal    = (document.getElementById('reg-citta').value   || '').trim();
   const regioneVal  = (document.getElementById('reg-regione').value || '').trim();
   const profiloVal  = profilo ? profilo.value : 'pubblico';
+  const tsEl        = document.getElementById('reg-timestamp-consenso');
+  const tsConsenso  = (tsEl && tsEl.value) ? tsEl.value : new Date().toISOString();
 
   const utente = {
     utente_id:        uid,
@@ -4888,7 +4901,6 @@ async function confermaRegistrazione() {
     regione:             regioneVal,
     timestamp_consenso:  tsConsenso,
   };
-  console.log('Registrazione utente:', JSON.stringify({...utente, password:'[hidden]'}));
 
   mostraInfoReg('⟳ Creazione account...', 'loading', info);
   const res = await gsPost('registraUtente', utente);
@@ -4977,7 +4989,6 @@ async function init() {
   }
   // Carica sempre la config fresca in background
   caricaConfigurazione().then(() => {
-    console.log('Config aggiornata dal foglio:', Object.keys(getConfig().sport_distanze||{}));
   });
 
   const uid = getUtenteId();
