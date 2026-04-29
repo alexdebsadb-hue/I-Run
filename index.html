@@ -1697,9 +1697,13 @@ function setUtenteId(id) {
 
 async function gsGet(params) {
   const uid = getUtenteId();
+  // Se params contiene già utente_id, usalo; altrimenti usa il loggato
+  const effectiveUid = params.utente_id !== undefined ? params.utente_id : uid;
+  // Rimuovi utente_id da params per evitare duplicati nella query string
+  const { utente_id: _drop, ...restParams } = params;
   const url = GS_URL + '?token=' + encodeURIComponent(GS_TOKEN)
-    + '&utente_id=' + encodeURIComponent(uid)
-    + Object.entries(params).map(([k,v]) => '&'+k+'='+encodeURIComponent(v)).join('');
+    + '&utente_id=' + encodeURIComponent(effectiveUid)
+    + Object.entries(restParams).map(([k,v]) => '&'+k+'='+encodeURIComponent(v)).join('');
   try {
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
     const res  = await Promise.race([fetch(url), timeout]);
@@ -1713,7 +1717,11 @@ async function gsGet(params) {
 
 async function gsPost(action, data) {
   const uid = getUtenteId();
-  if (data && !data.utente_id) data.utente_id = uid;
+  // Non iniettare utente_id per azioni che usano email come identificativo
+  const noInject = ['loginUtente','registraUtente','resetPasswordByEmail'];
+  if (data && !data.utente_id && !noInject.includes(action)) {
+    data.utente_id = uid;
+  }
   try {
     const fetchPromise = fetch(GS_URL, {
       method: 'POST',
@@ -3361,8 +3369,7 @@ async function _eseguiRicerca(q) {
 
   // ── Utenti: cerca nel foglio UTENTI per nome/cognome ──
   const uFound = [];
-  const gareAltrui = [];
-  const aggGare = {};
+  let gareAltrui = [];
 
   try {
     // Cerca utenti nel foglio
@@ -3379,21 +3386,21 @@ async function _eseguiRicerca(q) {
 
     // Cerca gare nel foglio di TUTTI gli utenti per città
     // Usa endpoint speciale che cerca per città su tutti gli utenti
-    const gareMatch = await gsGet({ action: 'cercaGarePerCitta', q: q });
-    if (Array.isArray(gareMatch)) {
-      gareMatch.forEach(g => {
-        const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
-        if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, recensioni: [] };
-        aggGare[k].count++;
-        const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
-        if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].recensioni.push(g); }
-      });
-    }
+    // gareAltrui già caricato sopra con gsGet cercaGarePerCitta
   } catch(e) {
   }
 
+  // Aggrega gareAltrui per nome+luogo
+  const aggGare = {};
+  gareAltrui.forEach(g => {
+    const k = (g.nome||g.tipo_gara||'').toLowerCase() + '|' + (g.luogo||'').toLowerCase();
+    if (!aggGare[k]) aggGare[k] = { gara: g, count: 0, sumAvg: 0, recensioni: [] };
+    aggGare[k].count++;
+    const avg = g.rating ? (g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3 : 0;
+    if (avg > 0) { aggGare[k].sumAvg += avg; aggGare[k].recensioni.push(g); }
+  });
   const gPubliche = Object.values(aggGare).sort((a,b) => b.count - a.count).slice(0, 5);
-  const hasCacheGare = _gareCache.length > 0;
+  const hasCacheGare = true; // sempre true ora che usiamo gsGet diretto
 
   const hasResults   = uFound.length || mieGare.length || gPubliche.length;
 
@@ -3558,7 +3565,7 @@ async function apriProfiloPubblico(uid) {
   let utente = _utentiCache.find(u => u.utente_id === uid);
   if (!utente) {
     const res = await gsGet({ action: 'getUtente', utente_id: uid });
-    if (res) utente = res;
+    if (res && res.utente_id) utente = res;
   }
 
   if (!utente) {
