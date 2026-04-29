@@ -759,26 +759,6 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Città</label>
-          <input class="form-input" id="reg-citta" placeholder="es. Milano" autocomplete="off" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Regione</label>
-          <select class="form-select" id="reg-regione">
-            <option value="">Seleziona...</option>
-            <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
-            <option>Campania</option><option>Emilia-Romagna</option>
-            <option>Friuli-Venezia Giulia</option><option>Lazio</option>
-            <option>Liguria</option><option>Lombardia</option><option>Marche</option>
-            <option>Molise</option><option>Piemonte</option><option>Puglia</option>
-            <option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
-            <option>Trentino-Alto Adige</option><option>Umbria</option>
-            <option>Valle d'Aosta</option><option>Veneto</option><option>Estero</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
           <label class="form-label">Password <span style="color:var(--accent)">*</span></label>
           <input class="form-input" id="reg-pwd" type="password" placeholder="min. 6 caratteri" />
         </div>
@@ -1583,26 +1563,6 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Città</label>
-          <input class="form-input" id="ep-citta" placeholder="es. Milano" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Regione</label>
-          <select class="form-select" id="ep-regione">
-            <option value="">Seleziona...</option>
-            <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
-            <option>Campania</option><option>Emilia-Romagna</option>
-            <option>Friuli-Venezia Giulia</option><option>Lazio</option>
-            <option>Liguria</option><option>Lombardia</option><option>Marche</option>
-            <option>Molise</option><option>Piemonte</option><option>Puglia</option>
-            <option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
-            <option>Trentino-Alto Adige</option><option>Umbria</option>
-            <option>Valle d'Aosta</option><option>Veneto</option><option>Estero</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
           <label class="form-label">Sport preferito</label>
           <input class="form-input" id="ep-sport" placeholder="es. Corsa" />
         </div>
@@ -1670,7 +1630,7 @@ function setCachedConfig(data) {
 }
 
 // ============ CONFIG GOOGLE SHEETS ============
-const GS_URL   = 'https://script.google.com/macros/s/AKfycbz_1dWypcvLjL3Tcq6Q7-xVWUPYigfIN-HwnvxN672-UizE1fXWWnmDrGRT6kxYkB4N/exec';
+const GS_URL   = 'https://script.google.com/macros/s/AKfycbwH-mXpHE89pyszQgh4HhskzFJnu00La-Atp6MMXVb9QGJnU9v9pBmwGHw2Bc7NBvdw/exec';
 const GS_TOKEN = '8Kt4aAIE-Unqql3EPo8tM3pXBxy2NVqdAUT8DUpLRrI';
 
 // ============ STORAGE — dual layer (locale + remoto) ============
@@ -1889,18 +1849,17 @@ async function caricaConfigurazione() {
       cfg.nazioni  = Array.isArray(cfg.nazioni)  ? cfg.nazioni  : [];
       cfg.regioni  = Array.isArray(cfg.regioni)  ? cfg.regioni  : [];
       // sport_distanze arriva direttamente dall'Apps Script (oggetto sport→[distanze])
-      if (cfg.sport_distanze && typeof cfg.sport_distanze === 'object') {
-        // già pronto — normalizza le chiavi in lowercase
+      if (cfg.sport_distanze && typeof cfg.sport_distanze === 'object'
+          && !Array.isArray(cfg.sport_distanze)
+          && Object.keys(cfg.sport_distanze).length > 0) {
+        // Normalizza chiavi in lowercase
         const mappa = {};
         Object.entries(cfg.sport_distanze).forEach(([k,v]) => {
           mappa[k.toLowerCase()] = Array.isArray(v) ? v : [];
         });
         cfg.sport_distanze = mappa;
-        console.log('sport_distanze dal foglio:', mappa);
       } else {
-        // Fallback: nessuna mappa disponibile
         cfg.sport_distanze = {};
-        console.warn('sport_distanze non disponibile nella config');
       }
       setConfig(cfg);
       setCachedConfig(cfg);
