@@ -611,9 +611,9 @@
         style="background:none;border:none;outline:none;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;width:220px;"
         oninput="onGlobalSearch(this.value)"
         onfocus="document.getElementById('search-wrap').style.borderColor='var(--accent)'"
-        onblur="document.getElementById('search-wrap').style.borderColor='var(--border2)';setTimeout(closeSearch,200)"
+        onblur="document.getElementById('search-wrap').style.borderColor='var(--border2)';setTimeout(()=>{const dd=document.getElementById('search-dropdown');if(dd&&dd.style.display==='block'&&!dd.innerHTML.includes('Ricerca in corso'))closeSearch();},300)"
         onkeydown="if(event.key==='Escape')closeSearch()" />
-      <span id="search-clear" style="cursor:pointer;color:var(--text3);font-size:16px;display:none;" onclick="clearSearch()">✕</span>
+      <span id="search-clear" style="cursor:pointer;color:var(--text3);font-size:16px;display:none;" onclick="forceCloseSearch()">✕</span>
     </div>
     <div id="search-dropdown" style="display:none;position:absolute;top:44px;left:0;width:380px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;z-index:500;box-shadow:0 16px 40px rgba(0,0,0,0.5);max-height:480px;overflow-y:auto;"></div>
   </div>
@@ -1006,22 +1006,22 @@
           <!-- LEGENDA -->
           <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;">
             <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Legenda</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;flex-direction:column;gap:8px;" id="mappa-legenda-list">
               <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:20px;height:14px;border-radius:3px;background:var(--accent);flex-shrink:0;"></div>
+                <div id="leg-s1" style="width:20px;height:14px;border-radius:3px;flex-shrink:0;"></div>
+                <span style="font-size:13px;">1–2 gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="leg-s2" style="width:20px;height:14px;border-radius:3px;flex-shrink:0;"></div>
+                <span style="font-size:13px;">3–5 gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="leg-s3" style="width:20px;height:14px;border-radius:3px;flex-shrink:0;"></div>
+                <span style="font-size:13px;">6–9 gare</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="leg-s4" style="width:20px;height:14px;border-radius:3px;flex-shrink:0;"></div>
                 <span style="font-size:13px;">10+ gare</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:20px;height:14px;border-radius:3px;background:#ff8a65;flex-shrink:0;"></div>
-                <span style="font-size:13px;">5–9 gare</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:20px;height:14px;border-radius:3px;background:#ffccbc;flex-shrink:0;"></div>
-                <span style="font-size:13px;">2–4 gare</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <div style="width:20px;height:14px;border-radius:3px;background:rgba(255,87,34,0.2);flex-shrink:0;"></div>
-                <span style="font-size:13px;">1 gara</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <div style="width:20px;height:14px;border-radius:3px;background:var(--bg4);border:1px solid var(--border);flex-shrink:0;"></div>
@@ -3048,13 +3048,25 @@ function colorWithAlpha(hex, alpha) {
 }
 
 function updateMapLegend(color) {
-  const levels = [
+  // Aggiorna legenda nella barra color picker
+  const levels1 = [
     {id:'legend-1', alpha:0.2},
     {id:'legend-2', alpha:0.45},
     {id:'legend-3', alpha:0.7},
     {id:'legend-4', alpha:1.0},
   ];
-  levels.forEach(({id, alpha}) => {
+  levels1.forEach(({id, alpha}) => {
+    const el = document.getElementById(id);
+    if (el) el.style.background = colorWithAlpha(color, alpha);
+  });
+  // Aggiorna legenda sidebar pannello laterale
+  const levels2 = [
+    {id:'leg-s1', alpha:0.25},
+    {id:'leg-s2', alpha:0.50},
+    {id:'leg-s3', alpha:0.75},
+    {id:'leg-s4', alpha:1.0},
+  ];
+  levels2.forEach(({id, alpha}) => {
     const el = document.getElementById(id);
     if (el) el.style.background = colorWithAlpha(color, alpha);
   });
@@ -3480,12 +3492,22 @@ function sposta2Gare(id) {
 
 // Debounce timer per la ricerca
 
+let _searchActive = false;
+
 function onGlobalSearch(q) {
   const dd  = document.getElementById('search-dropdown');
   const clr = document.getElementById('search-clear');
   if (clr) clr.style.display = q ? 'block' : 'none';
-  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
-
+  if (!q || q.length < 2) {
+    _searchActive = false;
+    dd.style.display = 'none';
+    return;
+  }
+  // Mostra subito "Ricerca in corso" così l'utente vede che sta lavorando
+  dd.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text3);font-size:13px;">
+    <span style="font-size:18px;">⏳</span> Ricerca in corso...</div>`;
+  dd.style.display = 'block';
+  _searchActive = true;
   // Debounce: aspetta 400ms prima di cercare
   clearTimeout(_searchTimer);
   _searchTimer = setTimeout(() => _eseguiRicerca(q), 400);
@@ -3540,6 +3562,7 @@ async function _eseguiRicerca(q) {
   const hasResults   = uFound.length || mieGare.length || gPubliche.length;
 
   // Aggiorna il dropdown con tutti i risultati (inclusi utenti e gare community)
+  _searchActive = false;
   _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, false);
 }
 
@@ -3570,7 +3593,7 @@ function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie)
       const isPub = u.profilo_pubblico !== false && String(u.profilo||'').toUpperCase() !== 'PRIVATO';
       // Evidenzia la parte che corrisponde alla query
       const nomeHL = evidenzia(nomeCompleto, q);
-      return `<div onclick="apriProfiloPubblico('${u.utente_id}');closeSearch();"
+      return `<div onclick="apriProfiloPubblico('${u.utente_id}');forceCloseSearch();"
         style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"
         onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${init}</div>
@@ -3593,7 +3616,7 @@ function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie)
       const avg = g.rating ? Math.round((g.rating.percorso+g.rating.ristori+g.rating.organizzazione)/3) : 0;
       const nomeHL = evidenzia(g.nome||g.tipo_gara||'', q);
       const luogoHL = evidenzia(g.luogo||'', q);
-      return `<div onclick="openDetail(${g.id});closeSearch();"
+      return `<div onclick="openDetail(${g.id});forceCloseSearch();"
         style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;"
         onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
         <span style="font-size:20px;">${sportIcon(g.sport)}</span>
@@ -3618,7 +3641,7 @@ function _renderRisultatiRicerca(q, ql, mieGare, uFound, gPubliche, dd, soloMie)
       const luogoHL = evidenzia(g.luogo||'', q);
       // Ultima recensione
       const ultimaRec = recensioni.sort((a,b) => String(b.data||'').localeCompare(String(a.data||'')))[0];
-      return `<div onclick="cercaRecensioni('${(g.luogo||g.nome||q).replace(/'/g,"\'")}_ID:${(g.nome||g.tipo_gara||'').replace(/'/g,"\'")}');closeSearch();"
+      return `<div onclick="cercaRecensioni('${(g.luogo||g.nome||q).replace(/'/g,"\'")}_ID:${(g.nome||g.tipo_gara||'').replace(/'/g,"\'")}');forceCloseSearch();"
         style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);"
         onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
         <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -3669,14 +3692,23 @@ function evidenzia(testo, query) {
 function clearSearch() {
   const inp = document.getElementById('global-search');
   if (inp) { inp.value = ''; inp.focus(); }
-  const clr = document.getElementById('search-clear');
-  if (clr) clr.style.display = 'none';
-  closeSearch();
+  forceCloseSearch();
 }
 
 function closeSearch() {
+  if (_searchActive) return; // non chiudere durante fetch
   const dd = document.getElementById('search-dropdown');
   if (dd) dd.style.display = 'none';
+}
+
+function forceCloseSearch() {
+  _searchActive = false;
+  const dd = document.getElementById('search-dropdown');
+  if (dd) dd.style.display = 'none';
+  const inp = document.getElementById('global-search');
+  if (inp) inp.value = '';
+  const clr = document.getElementById('search-clear');
+  if (clr) clr.style.display = 'none';
 }
 
 // ── Profilo pubblico di un altro utente ──
@@ -5282,12 +5314,20 @@ async function renderSocial() {
 
   // Carica tutti gli utenti e tutte le gare in parallelo
   const [utentiRes, gareRes] = await Promise.allSettled([
-    gsGet({ action: 'getAllUtenti' }),
-    gsGet({ action: 'getAllGare' }), // tutte le gare
+    gsGet({ action: 'getAllUtenti', utente_id: '' }),
+    gsGet({ action: 'getAllGare',   utente_id: '' }),
   ]);
 
   const utenti = (utentiRes.status === 'fulfilled' && Array.isArray(utentiRes.value)) ? utentiRes.value : [];
   const gare   = (gareRes.status === 'fulfilled'   && Array.isArray(gareRes.value))   ? gareRes.value.map(normalizzaGara) : [];
+
+  // Se entrambi vuoti, mostra errore
+  if (!utenti.length && !gare.length) {
+    document.getElementById('social-loading').innerHTML = `
+      <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+      <div>Impossibile caricare i dati. Verifica il deployment dell'Apps Script.</div>`;
+    return;
+  }
 
   // ── STATS UTENTI ──
   const nUtenti = utenti.length;
